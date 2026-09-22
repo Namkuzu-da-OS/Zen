@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=49';
-import { createGarden } from './garden.js?v=49';
-import { createCosmos, SCENES } from './cosmos.js?v=49';
+import { Sound } from './audio.js?v=51';
+import { createGarden } from './garden.js?v=51';
+import { createCosmos, SCENES } from './cosmos.js?v=51';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -565,6 +565,24 @@ function wireSitting() {
   let remaining = minutes * 60;
   let tick = null;
 
+  /* Sitting down should be quiet. The night already does this when
+     Dusk is pressed; the timer did not, so the stream ran underneath a
+     meditation. Only ever restores what it silenced itself: if the
+     night had already turned the ambient off, Sound.isOn() is false
+     here, nothing is remembered, and closing the timer cannot switch
+     it back on behind the night's back. */
+  let heldAmbience = false;
+
+  function holdAmbience() {
+    heldAmbience = Sound.isOn();
+    if (heldAmbience) { Sound.disable(); syncSoundControl(false); }
+  }
+  function releaseAmbience() {
+    if (!heldAmbience) return;
+    heldAmbience = false;
+    if (!Sound.isOn()) { Sound.enable(); syncSoundControl(true); }
+  }
+
   const clock = (s) => {
     const m = Math.floor(s / 60);
     const ss = String(Math.floor(s % 60)).padStart(2, '0');
@@ -633,7 +651,8 @@ function wireSitting() {
   const setOpen = (open) => {
     panel.classList.toggle('is-open', open);
     $('[data-control="sit"]')?.setAttribute('aria-pressed', String(open));
-    if (open) { reset(); showReflection(); } else { stop(); }
+    if (open) { holdAmbience(); reset(); showReflection(); }
+    else { stop(); releaseAmbience(); }
   };
 
   $('[data-control="sit"]')?.addEventListener('click', () =>

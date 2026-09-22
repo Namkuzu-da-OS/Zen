@@ -271,19 +271,23 @@ export const Sound = (() => {
   function bell(when = 0, strength = 1) {
     if (!wake()) return;
     const t = ctx.currentTime + when;
-    /* Pitch is not a neutral choice here — a lower bell reads as
-       settling, a higher one as alerting, and this one rings at the
-       end of a meditation. F3 was too bright for that job; D3 sits
-       under it without becoming a drone. Every partial below is a
-       ratio, so this one number moves the whole bell. */
-    const fundamental = 146.8;            // D3
+    /* Pitch is not a neutral choice at the end of a meditation: lower
+       reads as settling, higher as alerting. F3 was too bright, D3 was
+       still a little high against a real singing bowl, so B2. Every
+       partial below is a ratio off this, so this one number moves the
+       whole bell. */
+    const fundamental = 123.47;           // B2
+    /* [ratio, amplitude, decay seconds]. The decays are roughly
+       doubled: it needs to carry, and a bell that stops early reads as
+       a chime. Higher partials still damp first, which is what stops a
+       long tail turning into a drone. */
     const partials = [
-      [1.00, 1.00, 9.0],
-      [2.01, 0.52, 6.4],
-      [2.99, 0.34, 4.6],
-      [4.17, 0.21, 3.1],
-      [5.43, 0.13, 2.2],
-      [6.79, 0.08, 1.5]
+      [1.00, 1.00, 19.0],
+      [2.01, 0.52, 13.0],
+      [2.99, 0.34,  9.0],
+      [4.17, 0.21,  6.0],
+      [5.43, 0.13,  4.0],
+      [6.79, 0.08,  2.6]
     ];
 
     const bus = ctx.createGain();
@@ -294,9 +298,13 @@ export const Sound = (() => {
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.value = fundamental * ratio;
-      // bells drift very slightly flat as they ring out
+      /* Barely any drift. This used to fall to 0.997 of pitch over the
+         decay, which was audible as the tone sliding while it rang -
+         the "fast moving in frequency" problem. A struck bell does go
+         slightly flat, so it is not zero, but it is now small enough
+         to feel rather than hear. */
       osc.frequency.exponentialRampToValueAtTime(
-        fundamental * ratio * 0.997, t + decay);
+        fundamental * ratio * 0.9993, t + decay);
 
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, t);
