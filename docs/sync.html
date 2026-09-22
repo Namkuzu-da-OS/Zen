@@ -87,8 +87,8 @@
   <div>
     <h1>Tap sync</h1>
     <p class="sub">Play the recording and tap where a closing pulse belongs.
-    Three analysis passes failed to find a grid in the ending — it does not
-    contain one — so your ear sets these.</p>
+    Three analysis passes failed to find a grid in the ending, because it does
+    not contain one. Your ear sets these.</p>
   </div>
 
   <div class="panel">
@@ -175,7 +175,7 @@ function render() {
     const odd = g !== null && med && Math.abs(g - med) > med * .25;
     return `<tr><td>${i+1}</td><td>${clock(taps.sort((p,q)=>p-q)[i])}</td>`
          + `<td>${clock(x)}</td>`
-         + `<td class="${odd?'odd':''}">${g===null?'—':g.toFixed(3)+'s'}</td></tr>`;
+         + `<td class="${odd?'odd':''}">${g===null?'·':g.toFixed(3)+'s'}</td></tr>`;
   }).join('') || '<tr><td colspan="4" style="color:var(--dim)">no marks yet</td></tr>';
 
   if (gaps.length) {

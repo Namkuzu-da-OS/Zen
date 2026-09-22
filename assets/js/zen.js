@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=48';
-import { createGarden } from './garden.js?v=48';
-import { createCosmos, SCENES } from './cosmos.js?v=48';
+import { Sound } from './audio.js?v=49';
+import { createGarden } from './garden.js?v=49';
+import { createCosmos, SCENES } from './cosmos.js?v=49';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
