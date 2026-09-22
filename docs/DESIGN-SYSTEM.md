@@ -209,6 +209,32 @@ lands heavy, swells through the belly and lifts to a fine tail — a stroked
 `<circle>` has none of that. Regenerate with
 `docs/enso.py` if the shape ever needs changing.
 
+**A keyframed property outranks a normal declaration — even paused.**
+`.night-stars` carried `animation: star-shimmer` with
+`animation-play-state: paused`, and `star-shimmer` animates `opacity`.
+A paused animation still applies its current keyframe, and animations
+beat normal declarations in the cascade, so the layer was pinned at the
+0% keyframe (`.32`) and **every `opacity` rule written for it was
+dead** — including the `.4` that was supposed to apply during the
+night. Nobody had noticed because the wrong value still looked
+plausible. If a rule that should obviously work does nothing, check
+whether a keyframe owns that property.
+
+**Bright things are drawn fresh, every frame.** In `cosmos.js` only the
+field's wake lives on a persistent layer; bloom, corona, sun, planets
+and debris are rebuilt each frame. Additive fills against a small
+per-frame decay saturate within about a second, which once exposed a
+hard `fillRect` edge and a gradient's dither pattern as a visible box
+around the sun. Fill circles, not rectangles, for anything bright.
+
+**The shade under the system is painted, not cropped.** The nebula's
+bright diagonal runs through the centre, so the sun was landing on the
+highest-luminance part of the plate. `--scene-pos` cannot fix it: at a
+typical desktop size the plate's width fits the viewport exactly under
+`background-size: cover`, so there is no horizontal freedom at all and
+only ~160px vertically. The pocket of shade is drawn in canvas instead,
+which holds at every viewport.
+
 **All sound is synthesised.** The old site hotlinked five clips from
 soundbible.com and every one is now a 404, including the mountain stream
 the whole story turns on. Nothing carrying the meaning gets to depend on

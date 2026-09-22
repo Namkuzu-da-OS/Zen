@@ -710,17 +710,23 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     radial-gradient(1.4px 1.4px at 36% 90%, #fff, transparent 60%),
     radial-gradient(1.3px 1.3px at 64% 8%, #fff, transparent 60%);
   opacity: 0;
+  /* No animation here on purpose. It used to carry
+     `star-shimmer`, which animates opacity — and a keyframed
+     opacity outranks a normal declaration even while the animation
+     is paused, so it pinned this layer at the 0% keyframe (.32) and
+     silently defeated every opacity rule below, including the .4
+     that was meant to apply during the night. */
   transition: opacity 3.5s var(--ease);
-  animation: star-shimmer 6.5s ease-in-out infinite;
-  animation-play-state: paused;
 }
 #sanctuary.is-veiling .night-stars { opacity: .85; }
-#sanctuary.is-arriving .night-stars,
-#sanctuary.is-night .night-stars { opacity: .4; }
-#sanctuary.is-night .night-stars { animation-play-state: running; }
+/* The plate carries thousands of its own stars. This layer exists only
+   to bridge the arrival, before the plate has faded in — a second,
+   animated starfield sitting over the plate is the twinkle cliché
+   arriving by the back door, so it goes to nothing once the plate is
+   there and its shimmer never runs. */
+#sanctuary.is-arriving .night-stars { opacity: .2; }
+#sanctuary.is-night .night-stars { opacity: 0; }
 #sanctuary.is-leaving .night-stars { transition-duration: var(--leave-seconds); }
-@keyframes star-shimmer { 0%, 100% { opacity: .32; } 50% { opacity: .6; } }
-
 /* the plate itself: opaque, static, the actual destination. A solid
    fallback colour sits under the image so a slow or failed fetch still
    reads as a complete deep-indigo night, never a hole in the frame. */
