@@ -1094,6 +1094,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .colophon p { margin: 0; }
 .colophon .seal-mark { width: 30px; height: 30px; stroke: var(--gold); fill: none;
   stroke-width: .7; opacity: .5; }
+/* the licence credit for the stream recording: present and legible,
+   but it is not competing with anything */
+.credit { color: rgba(99, 115, 117, .78); font-size: .46rem; letter-spacing: .2em; }
+.credit a { border-bottom: 1px solid rgba(99, 115, 117, .3); }
 .colophon a { transition: color .4s var(--ease); }
 .colophon a:hover { color: var(--gold-soft); }
 

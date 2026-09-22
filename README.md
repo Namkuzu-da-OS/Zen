@@ -64,7 +64,22 @@ swap one, replace both files at the same path and re-check the
 `--scene-pos` / `--scene-pos-narrow` crops in `index.html`. See
 `docs/ART-BRIEF.md`.
 
-**All sound is synthesised in the browser.** The old site hotlinked five
+**The stream is a recording; everything else is synthesised.**
+`assets/audio/stream.mp3` is "Brook sound" by Wikimedia Commons user
+[TwoWings](https://commons.wikimedia.org/wiki/User:TwoWings), used under
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) and credited in
+the page colophon. Synthesis genuinely could not do this one: what
+separates a brook from an ocean is brightness and fast flicker, and a
+filtered noise bed cannot reach either. Measured, the recording sits at a
+4100 Hz spectral centroid with a fast/slow envelope ratio of 64.
+
+It is prepared, not raw: high-passed at 170 Hz because low rumble is the
+ocean signature, de-clicked (the source has 51 isolated single-sample
+spikes up to 3x the next loudest content, which tick in a quiet loop),
+and crossfaded tail-into-head into a seamless 14.16s loop. Rebuild it
+with the script noted in the changelog if the source is ever replaced.
+
+**The bell, the rake and the stones are synthesised in the browser.** The old site hotlinked five
 clips from soundbible.com and every one of them is now a 404 — including
 the mountain stream the whole story turns on. `assets/js/audio.js` builds
 the stream from filtered noise and the temple bell from inharmonic

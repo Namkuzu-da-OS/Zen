@@ -52,7 +52,49 @@ export const Sound = (() => {
     return buf;
   }
 
-  /* --- a mountain stream ---
+  /* --- a mountain stream, recorded ---
+     Synthesis lost this one. Three attempts all read as surf, and the
+     last measurement said why: what separates a brook from an ocean is
+     brightness and fast flicker, and a filtered noise bed cannot get
+     there. A real recording measures at a 4100 Hz spectral centroid
+     with a fast/slow envelope ratio of 64; the synthesised version was
+     nowhere near either.
+
+     assets/audio/stream.mp3 — "Brook sound" by Wikimedia Commons user
+     TwoWings, CC BY 3.0, prepared in three ways: high-passed at 170 Hz
+     because low rumble is the ocean signature; de-clicked, since the
+     source carried 51 isolated single-sample spikes up to 3x the next
+     loudest content, which would tick in a quiet loop; and crossfaded
+     tail-into-head for a seamless 14.16s loop. Web Audio loops the
+     decoded buffer, so mp3 encoder padding cannot open a gap.
+
+     Self-hosted, deliberately. This site's predecessor hotlinked five
+     clips and all five are now 404. */
+  let streamBuf = null;
+
+  async function loadStreamBuffer() {
+    if (streamBuf) return streamBuf;
+    const res = await fetch('/assets/audio/stream.mp3');
+    if (!res.ok) throw new Error('stream ' + res.status);
+    streamBuf = await ctx.decodeAudioData(await res.arrayBuffer());
+    return streamBuf;
+  }
+
+  function playSample(buf) {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    src.connect(out);
+    src.start();
+    // No filter wander on top. Slow modulation is exactly what made
+    // the synthesised version sound like surf; the recording already
+    // has all the movement it needs.
+    return { out, nodes: [src] };
+  }
+
+  /* --- the fallback: a synthesised stream ---
      The first version read as surf, and the reason was the
      modulation: two LFOs at 0.07 Hz and 0.031 Hz, so the filters
      swelled over 14 and 32 second cycles. Slow swells against a
@@ -64,7 +106,7 @@ export const Sound = (() => {
      bands carry it, the modulation runs 20 to 50 times faster, and
      discrete gurgles are scheduled on top. The gurgles are what
      actually sell it; a filtered noise wash never will. */
-  function buildStream() {
+  function buildSynthStream() {
     const brown = noiseBuffer(6, 'brown');
     const white = noiseBuffer(6, 'white');
     const out = ctx.createGain();
@@ -158,11 +200,24 @@ export const Sound = (() => {
   function enable() {
     if (!wake()) return false;
     wanted = true;
-    if (!stream) {
-      stream = buildStream();
-      stream.out.connect(master);
-    }
-    fade(master.gain, LEVEL, 3.2);   // arrive slowly
+
+    if (stream) { fade(master.gain, LEVEL, 3.2); return true; }
+
+    /* The recording is the real thing and the synth is the safety net.
+       The fade-in is 3.2s, so a short decode is invisible. */
+    loadStreamBuffer()
+      .then((buf) => {
+        if (!wanted || stream) return;
+        stream = playSample(buf);
+        stream.out.connect(master);
+        fade(master.gain, LEVEL, 3.2);
+      })
+      .catch(() => {
+        if (!wanted || stream) return;
+        stream = buildSynthStream();
+        stream.out.connect(master);
+        fade(master.gain, LEVEL, 3.2);
+      });
     return true;
   }
 
