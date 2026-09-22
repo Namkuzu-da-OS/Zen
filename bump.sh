@@ -15,7 +15,8 @@ sed -i "s|zen\.css?v=[0-9]*|zen.css?v=$next|"        index.html
 sed -i "s|zen\.js?v=[0-9]*|zen.js?v=$next|"          index.html
 sed -i "s|'\./audio\.js?v=[0-9]*'|'./audio.js?v=$next'|"   assets/js/zen.js
 sed -i "s|'\./garden\.js?v=[0-9]*'|'./garden.js?v=$next'|" assets/js/zen.js
+sed -i "s|'\./cosmos\.js?v=[0-9]*'|'./cosmos.js?v=$next'|" assets/js/zen.js
 
 echo "v$cur -> v$next"
 grep -o '\(zen\.css\|zen\.js\)?v=[0-9]*' index.html
-grep -o "\./\(audio\|garden\)\.js?v=[0-9]*" assets/js/zen.js
+grep -o "\./\(audio\|garden\|cosmos\)\.js?v=[0-9]*" assets/js/zen.js

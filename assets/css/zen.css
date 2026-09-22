@@ -4,7 +4,8 @@
 
    The interface recedes. The story leads. Nothing here should
    ask for attention before the visitor has had a chance to slow
-   down. Mobile-first; the desktop layer adds space, not features.
+   down. Mobile-first; the desktop layer composes the copy against
+   the photograph instead of stacking it in the middle.
    ============================================================= */
 
 /* ---------- 1. tokens ---------- */
@@ -23,15 +24,18 @@
   --mist:        #8a9a9c;
   --mist-dim:    #637375;
   --ivory:       #ece4d5;
-  --ivory-dim:   rgba(236, 228, 213, .72);
-  --ivory-faint: rgba(236, 228, 213, .44);
+  --ivory-dim:   rgba(236, 228, 213, .76);
+  --ivory-faint: rgba(236, 228, 213, .5);
 
-  /* parchment — the parable inverts into this */
-  --paper:       #e9e0ce;
-  --paper-warm:  #f2ebdc;
-  --paper-ink:   #2b2823;
-  --paper-mute:  #6a6155;
-  --paper-line:  rgba(43, 40, 35, .16);
+  /* washi — the parable lightens into this. Grey-ivory, not cream:
+     it has to hold the fog in the monk's photograph, not fight it. */
+  --paper:       #e3ddd1;
+  --paper-warm:  #ebe6db;
+  --paper-deep:  #cfc8ba;
+  --paper-ink:   #2a2723;
+  --paper-mute:  #625c55;
+  --paper-line:  rgba(42, 39, 35, .18);
+  --paper-gold:  #8f7743;
 
   /* accents — used sparingly, never as decoration */
   --gold:        #c9a961;
@@ -46,6 +50,7 @@
 
   /* the single rhythm everything is measured against */
   --gutter:  clamp(1.35rem, 5vw, 3rem);
+  --edge:    var(--gutter);              /* desktop widens this */
   --measure: 34rem;
 
   /* motion — slow on purpose */
@@ -80,12 +85,13 @@ img, svg, canvas { display: block; max-width: 100%; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 :focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
 
-/* the only sans in the building: labels, never prose */
+/* the only sans in the building: labels, never prose.
+   Nothing that means something renders under 11px. */
 .ui {
   font-family: var(--ui);
-  font-size: .58rem;
+  font-size: .72rem;
   font-weight: 400;
-  letter-spacing: .34em;
+  letter-spacing: .2em;
   text-transform: uppercase;
   line-height: 1.5;
 }
@@ -115,42 +121,74 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   position: fixed; inset: 0 0 auto 0; z-index: 60;
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem;
-  padding: clamp(1rem, 2.6vh, 1.7rem) var(--gutter);
+  padding: clamp(.9rem, 2.4vh, 1.6rem) var(--gutter);
   pointer-events: none;
   transition: opacity .6s var(--ease);
 }
 .masthead > * { pointer-events: auto; }
 .masthead.is-hidden { opacity: 0; pointer-events: none; }
 
-/* over the parable the world inverts, and so must the masthead */
+/* over the parable the world lightens, and so must the masthead */
 .masthead.on-light .lockup .name,
 .masthead.on-light .homeward { color: var(--paper-ink); }
 .masthead.on-light .lockup .sub,
 .masthead.on-light .creed { color: var(--paper-mute); }
-.masthead.on-light .door span { background: rgba(43, 40, 35, .66); }
+.masthead.on-light .door span { background: rgba(42, 39, 35, .7); filter: none; }
 .masthead.on-light .homeward::before {
-  background: linear-gradient(90deg, transparent, rgba(154, 127, 69, .5));
+  background: linear-gradient(90deg, transparent, rgba(143, 119, 67, .5));
 }
 .masthead .lockup .name, .masthead .lockup .sub,
 .masthead .creed, .masthead .homeward { transition: color .5s var(--ease); }
-.masthead .door span { transition: background .5s var(--ease),
-  transform .45s var(--ease), opacity .3s var(--ease), width .45s var(--ease); }
 
-.lockup { display: grid; gap: .3rem; }
+/* once the visitor is past the threshold the masthead steps back.
+   The door stays; everything else fades so it never sits on the story. */
+.masthead .lockup, .masthead .creed, .masthead .homeward {
+  transition: opacity .6s var(--ease), color .5s var(--ease), visibility .6s;
+}
+.masthead.is-deep .lockup,
+.masthead.is-deep .creed,
+.masthead.is-deep .homeward { opacity: 0; visibility: hidden; }
+/* with the way open, the name comes back */
+.masthead:has(.door[aria-expanded="true"]) .lockup { opacity: 1; visibility: visible; }
+
+/* On a phone the door would otherwise cross the prose as it scrolls
+   underneath. Once the visitor is reading it steps aside on the way
+   down and returns on the way up; when it is present it carries a
+   soft pool of the act's own dark, no edge, so the lines never sit
+   directly on type. Keyboard focus and the open menu always show it. */
+.door { transition: opacity .4s var(--ease), transform .4s var(--ease); }
+@media (max-width: 899px) {
+  .masthead.is-reading .door:not(:focus-visible):not([aria-expanded="true"]) {
+    opacity: 0; transform: translateY(-8px); pointer-events: none;
+  }
+  .door::before {
+    content: ""; position: absolute; inset: -22px -18px -22px -22px; z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(5, 8, 10, .58), rgba(5, 8, 10, .3) 55%, transparent);
+    opacity: 0; transition: opacity .5s var(--ease);
+  }
+  .door { position: relative; }
+  .masthead.is-deep .door::before { opacity: 1; }
+  .masthead.is-deep.on-light .door::before {
+    background: radial-gradient(closest-side, rgba(227, 221, 209, .92), rgba(227, 221, 209, .55) 55%, transparent);
+  }
+}
+
+.lockup { display: grid; gap: .32rem; }
 .lockup .name {
   font-family: var(--display); font-weight: 300;
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
-  letter-spacing: .42em; line-height: 1;
-  color: var(--ivory); text-indent: .42em;
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  letter-spacing: .4em; line-height: 1;
+  color: var(--ivory); text-indent: .4em;
+  text-shadow: 0 1px 12px rgba(5, 8, 10, .6);
 }
-.lockup .sub { color: var(--ivory-faint); font-size: .46rem; letter-spacing: .32em; }
+.lockup .sub { color: var(--ivory-faint); font-size: .66rem; letter-spacing: .24em; }
 
 .creed { display: none; color: var(--ivory-faint); }
 
 .homeward {
   display: none; align-items: center; gap: .9rem;
   color: var(--ivory-dim);
-  transition: color .4s var(--ease);
 }
 .homeward::before {
   content: ""; width: 44px; height: 1px;
@@ -160,12 +198,15 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* the door — one control, closed by default */
 .door {
-  display: grid; gap: 5px; padding: .6rem .3rem;
+  display: grid; gap: 5px; padding: .75rem .45rem;
   justify-items: end;
+  min-width: 44px; min-height: 44px; align-content: center;
 }
 .door span {
   display: block; width: 26px; height: 1px; background: var(--ivory-dim);
-  transition: transform .45s var(--ease), opacity .3s var(--ease), width .45s var(--ease);
+  filter: drop-shadow(0 1px 2px rgba(5, 8, 10, .7));
+  transition: transform .45s var(--ease), opacity .3s var(--ease),
+              width .45s var(--ease), background .5s var(--ease);
 }
 .door span:nth-child(2) { width: 18px; }
 .door[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); width: 26px; }
@@ -193,57 +234,81 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   color: var(--ivory-dim); transition: color .4s var(--ease);
 }
 .chamber a:hover, .chamber a:focus-visible { color: var(--gold-soft); }
-.chamber .num { color: var(--gold); font-size: .5rem; letter-spacing: .3em; }
+.chamber .num { color: var(--gold); font-size: .68rem; letter-spacing: .24em; }
 .chamber .act-name {
   font-family: var(--display); font-weight: 300;
   font-size: clamp(1.5rem, 5vw, 2.1rem);
-  letter-spacing: .2em; line-height: 1; text-indent: .2em;
+  letter-spacing: .12em; line-height: 1; text-indent: .12em;
 }
 
 /* ---------- 5. an act ---------- */
 
 .act {
   position: relative;
-  min-height: 100svh;
   display: grid;
-  padding: clamp(6rem, 14vh, 9rem) var(--gutter) clamp(4rem, 10vh, 7rem);
+  padding: clamp(5.5rem, 13vh, 8rem) var(--edge) clamp(4rem, 10vh, 6rem);
 }
+#threshold, #sanctuary { min-height: 100svh; }
 
-/* every dark act carries its own weather */
+/* every dark act carries its own weather.
+   Grading is per scene — a blanket filter crushed the mist out of
+   all four. Each one is tuned to keep type legible where the type
+   actually sits, and no darker anywhere else. */
+.act[data-scene] { overflow: hidden; }
 .act[data-scene]::before {
   content: ""; position: absolute; z-index: 0; inset: 0;
-  background-image: var(--scene);
+  background-image: var(--scene-jpg);
   background-size: cover;
   background-position: var(--scene-pos, center);
-  filter: saturate(.52) brightness(var(--scene-light, .56)) contrast(1.08);
+  filter: saturate(var(--scene-sat, .82)) brightness(var(--scene-light, .74)) contrast(var(--scene-contrast, 1.04));
 }
-/* Just enough shade to hold type. The mountain has to stay a mountain —
-   grading it to black is how the old site lost it. */
 .act[data-scene]::after {
   content: ""; position: absolute; z-index: 1; inset: 0;
-  background:
-    radial-gradient(ellipse 62% 44% at 50% 48%, rgba(5, 8, 10, .62), transparent 76%),
-    linear-gradient(180deg, rgba(5, 8, 10, .72) 0%, rgba(5, 8, 10, .26) 22%,
-                    rgba(5, 8, 10, .34) 58%, rgba(5, 8, 10, .9) 100%),
-    linear-gradient(180deg, rgba(20, 34, 44, .3), rgba(10, 16, 19, .3));
+  background: var(--scrim);
 }
 .act > * { position: relative; z-index: 2; }
 
+/* on a phone the frame is portrait: a different slice of each picture */
+.act[data-scene]::before { background-position: var(--scene-pos-narrow, var(--scene-pos, center)); }
+
+/* Every scene ships twice. The JPEG is the floor; a browser that can
+   negotiate formats takes the WebP at roughly half the weight. An
+   unsupported image-set() would invalidate the whole declaration and
+   leave the act black, hence the guard. */
+@supports (background-image: image-set(url("a.webp") type("image/webp"))) {
+  .act[data-scene]::before, .plate, .night-plate {
+    background-image: image-set(var(--scene-webp) type("image/webp"), var(--scene-jpg) type("image/jpeg"));
+  }
+}
+
 .act-mark {
   position: absolute; z-index: 3;
-  left: var(--gutter); bottom: clamp(1.4rem, 4vh, 2.4rem);
+  left: var(--edge); bottom: clamp(1.4rem, 4vh, 2.4rem);
+  margin: 0;
   display: flex; align-items: baseline; gap: .85rem;
   color: var(--ivory-faint);
+  text-shadow: 0 1px 10px rgba(5, 8, 10, .8);
 }
 .act-mark .n { color: var(--gold); }
-.act-mark .t { letter-spacing: .3em; }
 
 /* ---------- 6. 01 · the threshold ---------- */
 
-#threshold { place-items: center; text-align: center; }
-#threshold .inner { display: grid; justify-items: center; gap: clamp(1.4rem, 4vh, 2.4rem); }
+#threshold {
+  --scene-sat: .86; --scene-light: .8; --scene-contrast: 1.03;
+  --scrim:
+    radial-gradient(ellipse 70% 52% at 50% 56%, rgba(5, 8, 10, .5), transparent 74%),
+    linear-gradient(180deg, rgba(5, 8, 10, .5) 0%, rgba(5, 8, 10, .12) 24%,
+                    rgba(5, 8, 10, .22) 64%, rgba(5, 8, 10, .8) 100%);
+  align-content: center;
+  text-align: center;
+}
+#threshold .inner {
+  display: grid; justify-items: center; gap: clamp(1.4rem, 4vh, 2.2rem);
+  width: 100%; max-width: 78rem; margin: 0 auto;
+}
 
-.halo { width: clamp(150px, 34vw, 230px); opacity: .5; }
+/* three rings, faint, the geometry the whole page is quietly built on */
+.halo { width: clamp(120px, 30vw, 170px); opacity: .38; }
 .halo circle { fill: none; stroke: var(--gold-soft); stroke-width: .6; }
 .halo circle:nth-child(2) { opacity: .5; }
 .halo circle:nth-child(3) { opacity: .28; }
@@ -251,18 +316,19 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero-title {
   margin: 0;
   font-family: var(--display); font-weight: 300;
-  font-size: clamp(2.15rem, 7.4vw, 4.6rem);
-  line-height: 1.16; letter-spacing: .17em;
-  text-indent: .17em; text-transform: uppercase;
+  font-size: clamp(2.35rem, 7.4vw, 5.3rem);
+  line-height: 1.08; letter-spacing: .11em;
+  text-indent: .11em; text-transform: uppercase;
   color: var(--ivory);
-  text-shadow: 0 2px 40px rgba(5, 8, 10, .9);
+  text-shadow: 0 2px 40px rgba(5, 8, 10, .85);
 }
 
 .hero-creed {
-  margin: 0; max-width: 24rem;
-  color: var(--ivory-dim); font-family: var(--ui);
-  font-size: .56rem; letter-spacing: .3em; text-transform: uppercase; line-height: 2.2;
-  text-shadow: 0 1px 16px rgba(5, 8, 10, .95), 0 0 3px rgba(5, 8, 10, .8);
+  margin: 0; max-width: 26rem;
+  color: var(--ivory-dim);
+  font-family: var(--read); font-style: italic;
+  font-size: clamp(1.08rem, 1.5vw, 1.28rem); line-height: 1.75;
+  text-shadow: 0 1px 16px rgba(5, 8, 10, .9);
 }
 
 /* the single invitation */
@@ -274,7 +340,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .invitation .orb {
   position: relative;
   width: 62px; height: 62px; border-radius: 50%;
-  border: 1px solid rgba(227, 205, 155, .5);
+  border: 1px solid rgba(227, 205, 155, .55);
+  background: rgba(5, 8, 10, .18);
   display: grid; place-items: center;
   transition: border-color .45s var(--ease), transform .55s var(--ease),
               box-shadow .55s var(--ease);
@@ -307,11 +374,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 .scroll-cue {
   position: absolute; z-index: 3;
-  right: var(--gutter); bottom: clamp(1.4rem, 4vh, 2.4rem);
+  right: var(--edge); bottom: clamp(1.4rem, 4vh, 2.4rem);
+  margin: 0;
   display: grid; justify-items: center; gap: .7rem;
   color: var(--ivory-faint);
   writing-mode: vertical-rl;
+  transition: opacity .5s var(--ease);
 }
+.scroll-cue.is-gone { opacity: 0; }
 .scroll-cue .line {
   width: 1px; height: 46px;
   background: linear-gradient(180deg, var(--gold-faint), transparent);
@@ -324,123 +394,195 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   100% { transform: scaleY(1) translateY(46px); opacity: 0; }
 }
 
-/* ---------- 7. 02 · the parable (the page inverts) ---------- */
+/* ---------- 7. 02 · the parable (the page lightens) ---------- */
 
 #parable {
-  background: var(--paper);
+  padding: 0;
+  background:
+    radial-gradient(ellipse 90% 80% at 62% 38%, var(--paper-warm), var(--paper) 52%, var(--paper-deep) 100%);
   color: var(--paper-ink);
-  padding-block: clamp(5rem, 13vh, 9rem);
 }
-#parable .act-mark { color: var(--paper-mute); }
-#parable .act-mark .n { color: #9a7f45; }
+/* washi: a faint fibre so the page reads as a material, not a fill */
+#parable::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .55; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .32  0 0 0 0 .29  0 0 0 0 .25  0 0 0 .13 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+/* Light falling across the page, plus a little atmosphere gathering in
+   the fold where the photograph dissolves — otherwise the paper reads
+   as a flat artboard rather than a surface. */
+#parable::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(100deg, rgba(90, 82, 68, .13) 0%, rgba(90, 82, 68, .04) 26%,
+                    transparent 46%),
+    radial-gradient(ellipse 58% 70% at 74% 44%, rgba(255, 252, 244, .3), transparent 68%),
+    linear-gradient(180deg, transparent 58%, rgba(96, 88, 74, .1) 100%);
+}
+/* Only the content wrapper needs lifting above the atmosphere layer.
+   `#parable > *` also caught .act-mark and, outranking it on
+   specificity, turned its position:absolute into relative — which
+   breaks the phone layout where the mark moves to the top. */
+.parable-grid { position: relative; z-index: 1; }
+
+/* the parable's mark always sits over the plate, so it stays ivory —
+   a shade stronger, because the rock beneath it is lit */
+#parable .act-mark { color: var(--ivory-dim); text-shadow: 0 1px 12px rgba(5, 8, 10, .95), 0 0 3px rgba(5, 8, 10, .8); }
 
 .parable-grid {
-  width: min(100%, 72rem); margin: 0 auto;
-  display: grid; gap: clamp(2.4rem, 6vh, 4rem);
+  width: 100%;
+  display: grid;
 }
 
+/* The photograph is not a framed picture on the page; it is the
+   edge of the world the page has just left. It bleeds off the
+   side and its fog dissolves into the paper. */
 .plate {
-  /* On a phone the plate is a banner, not a poster: a full-height
-     portrait crop pushed the first line of the story off-screen. */
-  position: relative; width: 100%; border-radius: 2px; overflow: hidden;
-  aspect-ratio: 4 / 3; max-height: 38svh;
-  background:
-    linear-gradient(180deg, rgba(43, 40, 35, .06), rgba(43, 40, 35, .22)),
-    var(--plate, var(--ink));
-  background-size: cover; background-position: center;
-  box-shadow: 0 28px 70px rgba(43, 40, 35, .22);
+  position: relative; width: 100%;
+  height: clamp(20rem, 54svh, 30rem);
+  background-image: var(--scene-jpg);
+  background-color: var(--ink);
+  background-size: cover; background-position: var(--plate-pos, center);
+  -webkit-mask-image: linear-gradient(180deg, #000 52%, rgba(0, 0, 0, .55) 76%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 52%, rgba(0, 0, 0, .55) 76%, transparent 100%);
+  filter: saturate(.78) brightness(.9);
+}
+.plate.reveal { transform: none; }
+/* a little shade along the top edge, so the act mark and the door
+   can sit on the sky */
+.plate::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(5, 8, 10, .64), rgba(5, 8, 10, .22) 18%, transparent 34%);
 }
 
-.parable-body { max-width: var(--measure); }
+.parable-body {
+  max-width: calc(var(--measure) + 2 * var(--gutter));
+  padding: .5rem var(--gutter) clamp(4rem, 10vh, 6rem);
+}
 
 .parable-title {
-  margin: 0 0 clamp(1.8rem, 4vh, 2.6rem);
+  margin: 0 0 clamp(1.6rem, 4vh, 2.4rem);
   font-family: var(--display); font-weight: 400;
-  font-size: clamp(1.6rem, 4.6vw, 2.35rem);
-  line-height: 1.24; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--paper-ink);
+  font-size: clamp(2rem, 4.8vw, 3.1rem);
+  line-height: 1.1; letter-spacing: 0;
+  color: var(--paper-ink);
 }
 .parable-title::after {
-  content: ""; display: block; width: 52px; height: 1px;
-  margin-top: 1.5rem; background: #9a7f45;
+  content: ""; display: block; width: 44px; height: 1px;
+  margin-top: 1.4rem; background: var(--paper-gold);
 }
 
 #parable p {
-  margin: 0 0 1.55rem;
-  font-size: clamp(1.02rem, 1.4vw, 1.1rem);
-  line-height: 1.95; color: var(--paper-ink);
+  margin: 0 0 1.5rem;
+  font-size: clamp(1.06rem, 1.4vw, 1.14rem);
+  line-height: 1.85; color: var(--paper-ink);
 }
 #parable p:last-child { margin-bottom: 0; }
-#parable .said { color: #43403a; }
+#parable .said { color: #47433c; }
 
 /* the annotations — a glyph, a term, a gloss */
 .gloss {
   display: grid; grid-template-columns: auto 1fr; gap: 0 1.05rem;
   align-items: start;
-  margin: 2.4rem 0;
-  padding: 1.3rem 0;
+  margin: 2.2rem 0;
+  padding: 1.25rem 0;
   border-top: 1px solid var(--paper-line);
   border-bottom: 1px solid var(--paper-line);
 }
 .gloss .seal {
   grid-row: span 2;
   width: 38px; height: 38px; border-radius: 50%;
-  border: 1px solid rgba(154, 127, 69, .5);
+  border: 1px solid rgba(143, 119, 67, .55);
   display: grid; place-items: center;
-  color: #9a7f45; font-size: .8rem;
+  color: var(--paper-gold); font-size: .8rem;
 }
-.gloss .term { color: #9a7f45; letter-spacing: .3em; font-family: var(--ui);
-  font-size: .56rem; text-transform: uppercase; }
+.gloss .term { color: var(--paper-gold); letter-spacing: .2em; font-family: var(--ui);
+  font-size: .7rem; text-transform: uppercase; line-height: 1.6; }
 .gloss .mean {
-  margin: .4rem 0 0 !important; font-style: italic;
-  font-size: .96rem !important; line-height: 1.7; color: var(--paper-mute) !important;
+  margin: .35rem 0 0 !important; font-style: italic;
+  font-size: 1rem !important; line-height: 1.65; color: var(--paper-mute) !important;
 }
 
 /* ---------- 8. 03 · the awakening ---------- */
 
-#awakening { align-content: center; }
-#awakening .inner { width: min(100%, 66rem); margin: 0 auto; display: grid; gap: clamp(2rem, 6vh, 3.4rem); }
+/* The one place the page wakes up. It arrives dim and drifting and
+   clears as the visitor reaches it — light through the canopy, the
+   water coming forward — then holds. */
+#awakening {
+  --scene-sat: .62; --scene-light: .58; --scene-contrast: 1.04;
+  --scrim:
+    linear-gradient(90deg, rgba(5, 8, 10, .62) 0%, rgba(5, 8, 10, .42) 34%,
+                    rgba(5, 8, 10, .1) 66%, transparent 100%),
+    linear-gradient(180deg, rgba(5, 8, 10, .42) 0%, transparent 22%,
+                    transparent 72%, rgba(5, 8, 10, .74) 100%);
+  align-content: center;
+}
+#awakening::before {
+  transform: scale(1.06); transform-origin: 62% 40%;
+  transition: filter 3s var(--ease), transform 22s linear;
+}
+#awakening.is-in { --scene-sat: .96; --scene-light: 1; --scene-contrast: 1.02; }
+#awakening.is-in::before { transform: none; }
+
+#awakening .inner { width: 100%; max-width: 78rem; margin: 0 auto; display: grid; gap: clamp(2rem, 6vh, 3rem); }
 
 .question {
-  margin: 0; max-width: 20ch;
+  margin: 0; max-width: 15ch;
   font-family: var(--display); font-weight: 300; font-style: italic;
-  font-size: clamp(1.85rem, 6.2vw, 3.6rem);
-  line-height: 1.24; letter-spacing: .012em;
+  font-size: clamp(2.2rem, 7.4vw, 4.9rem);
+  line-height: 1.12; letter-spacing: 0;
   color: var(--ivory);
-  text-shadow: 0 2px 44px rgba(5, 8, 10, .95);
+  text-shadow: 0 2px 44px rgba(5, 8, 10, .9);
 }
 
 /* the breath between sentences is the point */
-.beat { margin: 0; max-width: 30rem; display: grid; gap: .55rem; }
+.beat { margin: 0; max-width: 30rem; display: grid; gap: .5rem; }
 .beat span {
-  font-size: clamp(1.02rem, 1.7vw, 1.16rem);
-  line-height: 1.75; color: var(--ivory-dim);
-  text-shadow: 0 1px 22px rgba(5, 8, 10, .9);
+  font-size: clamp(1.06rem, 1.7vw, 1.2rem);
+  line-height: 1.72; color: var(--ivory-dim);
+  text-shadow: 0 1px 22px rgba(5, 8, 10, .95), 0 0 2px rgba(5, 8, 10, .7);
 }
-.beat span.rest { margin-top: 1.5rem; }
+.beat span.rest { margin-top: 1.3rem; }
 .beat span.aware { color: var(--gold-soft); font-style: italic; }
 
 .gloss.dark {
-  border-color: rgba(227, 205, 155, .16);
+  margin: 0;
+  border-color: rgba(227, 205, 155, .2);
   max-width: 26rem;
+  /* a plaque, not a box: protects the annotation if the art is ever
+     recropped and the shadow it sits in moves */
+  padding-inline: clamp(.9rem, 2vw, 1.15rem);
+  background: linear-gradient(100deg, rgba(5, 8, 10, .42), rgba(5, 8, 10, .16) 82%, transparent);
+  border-radius: 2px;
 }
-.gloss.dark .seal { border-color: rgba(227, 205, 155, .34); color: var(--gold-soft); }
+.gloss.dark .seal { border-color: rgba(227, 205, 155, .4); color: var(--gold-soft); }
 .gloss.dark .term { color: var(--gold-soft); }
-.gloss.dark .mean { color: var(--ivory-faint) !important; }
+.gloss.dark .mean { color: var(--ivory-dim) !important;
+  text-shadow: 0 1px 18px rgba(5, 8, 10, .95), 0 0 3px rgba(5, 8, 10, .85); }
+.gloss.dark .term { text-shadow: 0 1px 10px rgba(5, 8, 10, .9); }
 
 /* ---------- 9. 04 · the transition ---------- */
 
-#transition { place-items: center; text-align: center; }
-#transition .inner { display: grid; justify-items: center; gap: clamp(1.5rem, 4vh, 2.6rem); }
-
-.enso { width: clamp(180px, 40vw, 310px); height: auto; }
-.enso path { fill: var(--ivory); }
-.enso .bleed { fill: var(--ivory); opacity: .16; filter: blur(3px); }
-/* the brush travels once, on arrival */
-.enso.is-in .stroke {
-  animation: ink 2.6s var(--ease) both;
-  clip-path: inset(0 0 0 0);
+/* Pale sky, one mountain. The copy sits in the shade on the left;
+   the ensō is drawn in ink on the sky over the peak, small enough
+   to be a mark rather than a monument. The bottom of the frame
+   darkens into the garden, so the eye is already going there. */
+#transition {
+  --scene-sat: .7; --scene-light: .82; --scene-contrast: 1.02;
+  --scrim:
+    linear-gradient(90deg, rgba(5, 8, 10, .8) 0%, rgba(5, 8, 10, .56) 36%,
+                    rgba(5, 8, 10, .14) 62%, rgba(5, 8, 10, .04) 100%),
+    linear-gradient(180deg, rgba(5, 8, 10, .34) 0%, transparent 20%,
+                    transparent 60%, rgba(10, 16, 19, .92) 100%);
+  align-content: center;
 }
+#transition .inner { width: 100%; max-width: 78rem; margin: 0 auto; display: grid; gap: clamp(1.4rem, 4vh, 2.2rem); }
+
+.enso { width: clamp(120px, 30vw, 170px); height: auto; }
+.enso path { fill: var(--ivory); }
+.enso .bleed { fill: var(--ivory); opacity: .18; filter: blur(3px); }
+/* the brush travels once, on arrival */
+.enso.is-in .stroke { animation: ink 2.6s var(--ease) both; }
 @keyframes ink {
   from { opacity: 0; transform: rotate(-9deg) scale(.94); }
   to   { opacity: 1; transform: none; }
@@ -449,95 +591,413 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .turn-title {
   margin: 0;
   font-family: var(--display); font-weight: 300;
-  font-size: clamp(1.95rem, 6.6vw, 3.9rem);
-  line-height: 1.18; letter-spacing: .17em; text-indent: .17em;
+  font-size: clamp(2.2rem, 6.8vw, 4.4rem);
+  line-height: 1.1; letter-spacing: .11em; text-indent: .11em;
   text-transform: uppercase; color: var(--ivory);
-  text-shadow: 0 2px 40px rgba(5, 8, 10, .92);
+  text-shadow: 0 2px 40px rgba(5, 8, 10, .85);
 }
 
-.turn-body { margin: 0; display: grid; gap: 1.5rem; color: var(--ivory-dim); }
-.turn-body span { font-size: clamp(1.02rem, 1.6vw, 1.14rem); line-height: 1.8; }
+.turn-body { margin: 0; max-width: 30rem; display: grid; gap: 1.2rem; color: var(--ivory-dim); }
+.turn-body span { font-size: clamp(1.06rem, 1.6vw, 1.2rem); line-height: 1.75;
+  text-shadow: 0 1px 18px rgba(5, 8, 10, .9); }
 .turn-body .now { color: var(--ivory); }
 
+/* begin — one ring, and a line that leads down into the garden */
 .begin {
+  position: relative;
   display: grid; place-items: center;
-  width: clamp(84px, 20vw, 108px); aspect-ratio: 1; border-radius: 50%;
-  border: 1px solid rgba(227, 205, 155, .46);
-  color: var(--ivory-dim); font-family: var(--ui);
-  font-size: .56rem; letter-spacing: .3em; text-transform: uppercase; text-indent: .3em;
+  width: clamp(92px, 20vw, 110px); aspect-ratio: 1; border-radius: 50%;
+  border: 1px solid rgba(227, 205, 155, .55);
+  background: rgba(5, 8, 10, .22);
+  color: var(--ivory); font-family: var(--ui);
+  font-size: .74rem; letter-spacing: .22em; text-transform: uppercase; text-indent: .22em;
   transition: border-color .5s var(--ease), color .5s var(--ease),
-              box-shadow .6s var(--ease), transform .6s var(--ease);
+              box-shadow .6s var(--ease), background .5s var(--ease);
 }
 .begin:hover, .begin:focus-visible {
   border-color: var(--gold-soft); color: var(--gold-soft);
+  background: rgba(201, 169, 97, .08);
   box-shadow: 0 0 52px rgba(201, 169, 97, .2);
-  transform: scale(1.04);
 }
 
 /* ---------- 10. 05 · the sanctuary ---------- */
 
 #sanctuary {
   padding: 0;
-  min-height: 100svh;
-  grid-template-rows: 1fr auto;
+  display: grid;
   background: var(--ink-deep);
   overflow: hidden;
+  /* how long Dawn takes to reveal the garden again; the JS sets this
+     inline per-exit (early exit vs the recording's own end), so it has
+     to live on the element the script targets, not a descendant —
+     an inline style always wins over a stylesheet default here */
+  --leave-seconds: 9s;
 }
 #sanctuary .act-mark { display: none; }
 
-.garden-stage { position: relative; z-index: 1; overflow: hidden; }
-#garden { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.garden-stage { position: relative; z-index: 1; overflow: hidden; min-height: 100svh; }
+#garden {
+  position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none;
+  opacity: 1; filter: saturate(1) brightness(1) contrast(1);
+  transition: opacity 6s var(--ease), filter 4s var(--ease);
+}
+#sanctuary.is-leaving #garden { transition-duration: var(--leave-seconds), calc(var(--leave-seconds) * .7); }
+#sanctuary.is-hushing #garden { filter: saturate(.68) brightness(.86) contrast(.97); }
+#sanctuary.is-veiling #garden { filter: saturate(.3) brightness(.4) contrast(.92); }
+#sanctuary.is-arriving #garden,
+#sanctuary.is-night #garden { opacity: 0; filter: saturate(.3) brightness(.4) contrast(.92); }
+#sanctuary.is-locked #garden { pointer-events: none; }
 
-/* the veranda post and eave, so the garden is seen *from* somewhere */
+/* the veranda's eave and the shade beneath it, so the garden is seen
+   *from* somewhere rather than floating. It belongs to the daylight
+   room, so it fades with the rest of the room, not the stars. */
 .garden-stage::after {
   content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(5, 8, 10, .82) 0%, transparent 18%),
-    linear-gradient(0deg, rgba(5, 8, 10, .7) 0%, transparent 22%);
+    linear-gradient(180deg, rgba(5, 8, 10, .78) 0%, rgba(5, 8, 10, .2) 12%, transparent 24%),
+    linear-gradient(0deg, rgba(5, 8, 10, .6) 0%, transparent 26%),
+    linear-gradient(90deg, rgba(5, 8, 10, .28), transparent 16%, transparent 84%, rgba(5, 8, 10, .28));
+  opacity: 1;
+  transition: opacity 5s var(--ease);
 }
+#sanctuary.is-leaving .garden-stage::after { transition-duration: var(--leave-seconds); }
+#sanctuary.is-arriving .garden-stage::after,
+#sanctuary.is-night .garden-stage::after { opacity: 0; }
+
+/* ---- the night ----
+   Chosen, never automatic, and staged rather than swapped: a hush over
+   the garden, an ink tide that swallows it, then a cosmos that arrives
+   whole. By the time the meditation begins the garden is gone, not
+   merely dimmed — opacity 0, pointer-events none, nothing ghosting
+   through. Every layer here is transform/opacity only so the drift
+   underneath the meditation stays cheap. */
+.night {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  overflow: hidden;
+}
+.night > * { position: absolute; inset: 0; }
+
+/* the ink tide: a near-black indigo veil that spreads through the
+   frame first, so nothing of the garden is ever left showing once the
+   plate has taken over */
+.night-veil {
+  background:
+    radial-gradient(130% 105% at 28% 74%, rgba(9, 13, 26, .97) 0%, rgba(6, 9, 19, .98) 46%, rgba(3, 5, 11, 1) 76%),
+    radial-gradient(95% 85% at 80% 16%, rgba(20, 17, 38, .88) 0%, transparent 62%);
+  opacity: 0;
+  transform: scale(1.08);
+  /* ease-in: the tide spreads gradually through the dissolve window
+     rather than going fully dark in the first half-second of it */
+  transition: opacity 4.4s ease-in, transform 6s var(--ease);
+}
+#sanctuary.is-veiling .night-veil,
+#sanctuary.is-arriving .night-veil,
+#sanctuary.is-night .night-veil { opacity: 1; transform: scale(1); }
+#sanctuary.is-leaving .night-veil { transition-duration: var(--leave-seconds); transition-timing-function: ease-out, var(--ease); }
+
+/* stars that surface inside the darkness while it is still spreading;
+   once the plate is opaque this is just a faint shimmer over it */
+.night-stars {
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 20%, #fff, transparent 60%),
+    radial-gradient(1.3px 1.3px at 27% 62%, #eef1ff, transparent 60%),
+    radial-gradient(1.8px 1.8px at 42% 35%, #fff, transparent 60%),
+    radial-gradient(1.2px 1.2px at 58% 78%, #dfe6ff, transparent 60%),
+    radial-gradient(1.5px 1.5px at 71% 24%, #fff, transparent 60%),
+    radial-gradient(1.3px 1.3px at 84% 56%, #eef1ff, transparent 60%),
+    radial-gradient(1.7px 1.7px at 91% 15%, #fff, transparent 60%),
+    radial-gradient(1.2px 1.2px at 8% 84%, #dfe6ff, transparent 60%),
+    radial-gradient(1.4px 1.4px at 36% 90%, #fff, transparent 60%),
+    radial-gradient(1.3px 1.3px at 64% 8%, #fff, transparent 60%);
+  opacity: 0;
+  transition: opacity 3.5s var(--ease);
+  animation: star-shimmer 6.5s ease-in-out infinite;
+  animation-play-state: paused;
+}
+#sanctuary.is-veiling .night-stars { opacity: .85; }
+#sanctuary.is-arriving .night-stars,
+#sanctuary.is-night .night-stars { opacity: .4; }
+#sanctuary.is-night .night-stars { animation-play-state: running; }
+#sanctuary.is-leaving .night-stars { transition-duration: var(--leave-seconds); }
+@keyframes star-shimmer { 0%, 100% { opacity: .32; } 50% { opacity: .6; } }
+
+/* the plate itself: opaque, static, the actual destination. A solid
+   fallback colour sits under the image so a slow or failed fetch still
+   reads as a complete deep-indigo night, never a hole in the frame. */
+.night-plate {
+  background-color: #060a14;
+  background-image: var(--scene-jpg, none);
+  background-size: cover;
+  background-position: var(--scene-pos, 60% 40%);
+  opacity: 0;
+  /* ease-in, not var(--ease) — that curve is most of the way to
+     opaque within the first second of 6.5s, which reads as a snap
+     instead of an arrival. A slow start keeps the plate visibly
+     resolving across the whole window instead of sitting there
+     already done */
+  transition: opacity 6.5s ease-in;
+}
+#sanctuary.is-arriving .night-plate,
+#sanctuary.is-night .night-plate { opacity: 1; }
+#sanctuary.is-leaving .night-plate { transition-duration: var(--leave-seconds); transition-timing-function: ease-out; }
+
+/* a slow, cheap noise, drifting almost imperceptibly — texture, not motion */
+.night-plate::after {
+  content: ""; position: absolute; inset: -10%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  opacity: .05;
+  mix-blend-mode: overlay;
+  animation: grain-drift 130s linear infinite;
+  animation-play-state: paused;
+}
+#sanctuary.is-night .night-plate::after { animation-play-state: running; }
+@keyframes grain-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-160px, -120px, 0); } }
+
+/* one large, low nebula layer, breathing diagonally across the whole
+   frame very slowly */
+.night-nebula {
+  inset: -20%;
+  background:
+    radial-gradient(38% 46% at 76% 20%, rgba(126, 156, 255, .22), transparent 62%),
+    radial-gradient(46% 40% at 16% 70%, rgba(96, 74, 196, .16), transparent 60%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translate3d(-1.5%, -1%, 0) scale(1.04);
+  transition: opacity 5s var(--ease);
+  animation: nebula-drift 68s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+#sanctuary.is-arriving .night-nebula { opacity: .6; }
+#sanctuary.is-night .night-nebula { opacity: 1; animation-play-state: running; }
+#sanctuary.is-leaving .night-nebula { transition-duration: var(--leave-seconds); }
+@keyframes nebula-drift {
+  from { transform: translate3d(-1.6%, -1%, 0) scale(1.04); }
+  to   { transform: translate3d(2%, 1.6%, 0) scale(1.13); }
+}
+
+/* one restrained, counter-moving haze — an aurora suggestion, not a
+   second nebula */
+.night-haze {
+  inset: -20%;
+  background:
+    linear-gradient(115deg, transparent 32%, rgba(84, 186, 204, .1) 50%, transparent 66%),
+    radial-gradient(56% 48% at 62% 82%, rgba(150, 112, 220, .1), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translate3d(1.5%, .8%, 0) scale(1.02);
+  transition: opacity 6s var(--ease);
+  animation: haze-drift 48s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+#sanctuary.is-arriving .night-haze { opacity: .45; }
+#sanctuary.is-night .night-haze { opacity: .85; animation-play-state: running; }
+#sanctuary.is-leaving .night-haze { transition-duration: var(--leave-seconds); }
+@keyframes haze-drift {
+  from { transform: translate3d(1.6%, .8%, 0) scale(1.02); }
+  to   { transform: translate3d(-2%, -1.2%, 0) scale(1.09); }
+}
+
+/* a faint warm/silver suggestion that enters the blacks near the
+   recording's return — never daylight, just a hint the meditation is
+   coming home. A dedicated layer so it can fade in on its own, rather
+   than snapping a gradient list that cannot interpolate */
+.night-haze::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(52% 42% at 46% 88%, rgba(232, 214, 180, .16), transparent 72%);
+  opacity: 0;
+  transition: opacity 5s var(--ease);
+}
+#sanctuary[data-track-phase="return"] .night-haze::after,
+#sanctuary[data-track-phase="ending"] .night-haze::after { opacity: 1; }
+
+/* stillness dims the ambient layers a touch, as the peripheral
+   highlights settle */
+#sanctuary[data-track-phase="stillness"] .night-nebula { opacity: .7; }
+#sanctuary[data-track-phase="stillness"] .night-haze { opacity: .55; }
+
+/* the meditation cue: four words, at most, breathed in and out */
+/* The tide sits over the nebula and under the cue and the player.
+   Additive strokes, so it reads as light in water rather than paint. */
+.night-tide {
+  z-index: 4; pointer-events: none;
+  width: 100%; height: 100%;
+  opacity: 0; transition: opacity 2.4s var(--ease);
+  mix-blend-mode: screen;
+}
+/* Reduced motion does not remove the tide. Reaching it takes pressing
+   Dusk and then pressing play — the same opt-in as starting a video —
+   so flow.js runs a calmer field instead of showing nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .night-tide { transition: opacity .8s linear; }
+}
+.night-tide.is-live { opacity: 1; }
+
+/* Left third, clear of the sun and the inner orbits. These used to
+   sit dead centre, on top of the bodies. */
+.night-cue {
+  left: var(--gutter); top: 27%; right: auto; bottom: auto;
+  transform: none;
+  margin: 0; width: max-content; max-width: 46vw;
+  text-align: left; pointer-events: none;
+  font-family: var(--display); font-weight: 300;
+  font-size: clamp(1.3rem, 3.6vw, 2.3rem);
+  letter-spacing: .32em; text-transform: uppercase;
+  color: rgba(227, 205, 155, .34);
+  text-shadow: 0 2px 26px rgba(3, 5, 10, .9);
+  opacity: 0;
+  transition: opacity 3s var(--ease);
+}
+.night-cue.is-in { opacity: 1; }
+@media (max-width: 420px) { .night-cue { display: none; } }
+
+/* ambient drift costs nothing while no one can see it */
+#sanctuary.is-ambient-paused .night-stars,
+#sanctuary.is-ambient-paused .night-plate::after,
+#sanctuary.is-ambient-paused .night-nebula,
+#sanctuary.is-ambient-paused .night-haze { animation-play-state: paused; }
+
+/* what the voice needs, and nothing more */
+.playing {
+  position: absolute; z-index: 4;
+  right: var(--gutter); bottom: clamp(9.5rem, 16vh, 11rem);
+  display: grid; justify-items: end; text-align: right; gap: .55rem;
+  color: var(--ivory);
+  text-shadow: 0 1px 14px rgba(5, 8, 10, .9);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 1.6s var(--ease), transform 1.6s var(--ease);
+}
+.playing.is-in { opacity: 1; transform: none; }
+.playing [hidden] { display: none !important; }   /* Pause / Play again trade places */
+.playing p { margin: 0; }
+.playing .episode { color: var(--gold); }
+.playing .track {
+  font-family: var(--display); font-weight: 300;
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  letter-spacing: .16em; text-transform: uppercase; line-height: 1.1;
+}
+.playing .progress {
+  width: clamp(170px, 22vw, 280px); height: 1px; margin-top: .5rem;
+  background: rgba(236, 228, 213, .2);
+}
+.playing .fill { display: block; height: 100%; width: 0; background: var(--gold-soft);
+  transition: width 1s linear; }
+.playing .row { display: flex; align-items: center; justify-content: flex-end; gap: 1.1rem; margin-top: .1rem; }
+.playing .time { color: var(--ivory-faint); font-variant-numeric: tabular-nums; letter-spacing: .12em; }
+.playing .pause, .playing .replay {
+  display: flex; align-items: center; gap: .55rem;
+  min-height: 44px; padding: .4rem .2rem;
+  color: var(--ivory-dim); font-family: var(--ui); font-size: .72rem;
+  letter-spacing: .2em; text-transform: uppercase; line-height: 1;
+  transition: color .4s var(--ease);
+}
+.playing .pause:hover, .playing .replay:hover { color: var(--gold-soft); }
+.playing .replay { color: var(--gold-soft); }
+.playing .ico { width: 11px; height: 11px; fill: currentColor; }
+.playing .ico .r { display: none; }
+.playing:not(.is-playing) .pause .ico .p { display: none; }
+.playing:not(.is-playing) .pause .ico .r { display: block; }
+.playing .replay .ico .r { display: block; }
+/* the voice slider: a hairline, subordinate to everything above it */
+.playing .voice { display: flex; align-items: center; min-height: 44px; }
+.playing .voice input {
+  -webkit-appearance: none; appearance: none;
+  width: 72px; height: 1px; margin: 0; background: rgba(236, 228, 213, .28);
+  cursor: pointer;
+}
+.playing .voice input::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--gold-soft); border: 0;
+}
+.playing .voice input::-moz-range-thumb { width: 9px; height: 9px; border-radius: 50%;
+  background: var(--gold-soft); border: 0; }
+.playing .voice input:focus-visible { outline: 1px solid var(--gold); outline-offset: 8px; }
+.playing .note { color: var(--ivory-faint); letter-spacing: .12em; min-height: 1.2em; }
+.playing .note:empty { display: none; }
 
 .vow {
   position: absolute; z-index: 3; pointer-events: none;
-  left: var(--gutter); bottom: clamp(1.6rem, 5vh, 3rem);
-  display: grid; gap: .55rem;
+  left: var(--gutter); top: clamp(5.5rem, 13vh, 8rem);
+  margin: 0;
+  display: grid; gap: .5rem;
   font-family: var(--display); font-weight: 300;
-  font-size: clamp(1.05rem, 2.6vw, 1.55rem);
-  letter-spacing: .3em; text-transform: uppercase; text-indent: .3em;
+  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+  letter-spacing: .22em; text-transform: uppercase; text-indent: .22em;
   color: var(--ivory-dim);
   text-shadow: 0 2px 30px rgba(5, 8, 10, .95);
+  opacity: 1;
+  transition: opacity 4s var(--ease);
+}
+/* it belongs to the daylight garden; it softens and fades with it
+   rather than standing over the cosmos */
+#sanctuary.is-veiling .vow { opacity: .3; }
+#sanctuary.is-arriving .vow,
+#sanctuary.is-night .vow { opacity: 0; }
+#sanctuary.is-leaving .vow { transition-duration: var(--leave-seconds); }
+
+/* the control rail — sits in the shade at the foot of the garden.
+   Sit is the reason the room exists; the rest are quieter. */
+.rail {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(.15rem, 2vw, 1.2rem);
+  padding: 1.6rem var(--gutter) clamp(1.1rem, 3.4vh, 1.9rem);
+  padding-bottom: max(clamp(1.1rem, 3.4vh, 1.9rem), env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, rgba(5, 8, 10, .5) 45%, rgba(5, 8, 10, .82));
+  pointer-events: none;               /* only the buttons take the hand */
+}
+.rail button { pointer-events: auto; }
+.rail button {
+  display: grid; justify-items: center; align-content: end; gap: .55rem;
+  min-width: 56px; min-height: 60px;
+  padding: .5rem clamp(.35rem, 1.6vw, .8rem);
+  color: var(--ivory-dim);
+  transition: color .4s var(--ease);
+}
+.rail button:hover { color: var(--gold-soft); }
+.rail button[aria-pressed="true"] { color: var(--gold-soft); }
+.rail button[aria-pressed="true"] .lbl::after { opacity: 1; transform: none; }
+.rail .icon { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.15; }
+.rail .lbl {
+  position: relative;
+  font-family: var(--ui); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase;
+  line-height: 1.4;
+}
+.rail .lbl::after {
+  content: ""; position: absolute; left: 50%; bottom: -.45rem;
+  width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
+  background: var(--gold-soft);
+  opacity: 0; transform: scale(.4);
+  transition: opacity .35s var(--ease), transform .35s var(--ease);
 }
 
-/* the control rail — four things, labelled, and quiet */
-.rail {
-  position: relative; z-index: 4;
-  display: flex; justify-content: center; align-items: stretch;
-  gap: clamp(.2rem, 3vw, 1.6rem);
-  padding: clamp(.9rem, 2.4vh, 1.5rem) var(--gutter) clamp(1.3rem, 3.4vh, 2rem);
-  background: linear-gradient(180deg, transparent, rgba(5, 8, 10, .6) 40%, var(--void));
+.rail .primary { min-width: 84px; color: var(--ivory); margin-inline: clamp(.2rem, 1.5vw, 1rem); }
+.rail .primary .icon {
+  width: 52px; height: 52px; padding: 14px; border-radius: 50%;
+  border: 1px solid rgba(227, 205, 155, .6);
+  background: rgba(5, 8, 10, .3);
+  stroke: var(--gold-soft); fill: var(--gold-soft);
+  transition: border-color .4s var(--ease), background .4s var(--ease), box-shadow .5s var(--ease);
 }
-.rail button {
-  display: grid; justify-items: center; gap: .62rem;
-  padding: .5rem clamp(.5rem, 2.2vw, 1.1rem);
-  color: var(--ivory-faint);
-  transition: color .4s var(--ease), transform .4s var(--ease);
+.rail .primary:hover .icon, .rail .primary:focus-visible .icon {
+  border-color: var(--gold-soft); box-shadow: 0 0 36px rgba(201, 169, 97, .18);
 }
-.rail button:hover { color: var(--gold-soft); transform: translateY(-2px); }
-.rail button[aria-pressed="true"] { color: var(--gold-soft); }
-.rail .icon { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.1; }
-.rail .lbl { font-family: var(--ui); font-size: .48rem; letter-spacing: .26em; text-transform: uppercase; }
+.rail .primary[aria-pressed="true"] .icon { background: rgba(201, 169, 97, .16); border-color: var(--gold-soft); }
+.rail .primary .lbl { font-size: .74rem; }
 
 /* the sitting — timer, over the garden, not beside it */
 .sitting {
   position: absolute; inset: 0; z-index: 5;
   display: grid; place-items: center;
+  padding: 4rem var(--gutter) 8rem;
   background: rgba(5, 8, 10, .74);
   opacity: 0; visibility: hidden;
   transition: opacity .7s var(--ease), visibility .7s;
 }
 .sitting.is-open { opacity: 1; visibility: visible; backdrop-filter: blur(16px); }
-.sitting .panel { display: grid; justify-items: center; gap: clamp(1.3rem, 3.6vh, 2.2rem); text-align: center; }
+.sitting .panel { display: grid; justify-items: center; gap: clamp(1.2rem, 3.4vh, 2rem); text-align: center; }
 
-.dial { position: relative; width: clamp(196px, 52vw, 250px); aspect-ratio: 1; display: grid; place-items: center; }
+.dial { position: relative; width: clamp(190px, 50vw, 250px); aspect-ratio: 1; display: grid; place-items: center; }
 .dial svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
 .dial .track { fill: none; stroke: rgba(227, 205, 155, .13); stroke-width: 1.4; }
 .dial .arc {
@@ -554,37 +1014,38 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 .spans { display: flex; gap: .7rem; }
 .spans button {
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 48px; height: 48px; border-radius: 50%;
   border: 1px solid rgba(227, 205, 155, .24);
   display: grid; place-items: center;
-  color: var(--ivory-faint); font-family: var(--ui);
-  font-size: .62rem; letter-spacing: .04em;
+  color: var(--ivory-dim); font-family: var(--ui);
+  font-size: .8rem; letter-spacing: .04em;
   transition: border-color .4s var(--ease), color .4s var(--ease);
 }
 .spans button[aria-pressed="true"] { border-color: var(--gold-soft); color: var(--gold-soft); }
 
 .sit-go {
-  padding: .95rem 3.2rem; border-radius: 40px;
+  padding: .95rem 3rem; border-radius: 40px;
   border: 1px solid rgba(227, 205, 155, .4);
-  color: var(--ivory-dim); font-family: var(--ui);
-  font-size: .56rem; letter-spacing: .32em; text-transform: uppercase; text-indent: .32em;
+  color: var(--ivory); font-family: var(--ui);
+  font-size: .74rem; letter-spacing: .22em; text-transform: uppercase; text-indent: .22em;
   transition: border-color .4s var(--ease), color .4s var(--ease), background .4s var(--ease);
 }
 .sit-go:hover { border-color: var(--gold-soft); color: var(--gold-soft); background: rgba(201, 169, 97, .06); }
 
 .sit-close {
   color: var(--ivory-faint); font-family: var(--ui);
-  font-size: .5rem; letter-spacing: .3em; text-transform: uppercase;
+  font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+  padding: .6rem .4rem;
   transition: color .4s var(--ease);
 }
 .sit-close:hover { color: var(--gold-soft); }
 
 /* the reflection that surfaces while sitting */
 .reflection {
-  max-width: 22rem; min-height: 3.4em;
+  max-width: 22rem; min-height: 3.4em; margin: 0;
   font-family: var(--display); font-style: italic; font-weight: 300;
-  font-size: clamp(1.02rem, 2.4vw, 1.18rem); line-height: 1.7;
-  color: var(--ivory-faint);
+  font-size: clamp(1.06rem, 2.4vw, 1.2rem); line-height: 1.7;
+  color: var(--ivory-dim);
   opacity: 0; transition: opacity 1.6s var(--ease);
 }
 .reflection.is-in { opacity: 1; }
@@ -600,59 +1061,206 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .close-act .word {
   margin: 0; max-width: 30rem;
   font-family: var(--display); font-style: italic; font-weight: 300;
-  font-size: clamp(1.15rem, 3.4vw, 1.6rem); line-height: 1.75;
+  font-size: clamp(1.2rem, 3.4vw, 1.65rem); line-height: 1.7;
   color: var(--ivory-dim);
 }
-.close-act .attrib { color: var(--ivory-faint); font-family: var(--ui);
-  font-size: .5rem; letter-spacing: .3em; text-transform: uppercase; }
+.close-act .attrib { margin: 0; color: var(--ivory-faint); font-family: var(--ui);
+  font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; }
 
 .colophon {
-  display: grid; gap: 1.2rem; justify-items: center; text-align: center;
+  display: grid; gap: 1.1rem; justify-items: center; text-align: center;
   padding: clamp(2.4rem, 6vh, 3.6rem) var(--gutter) clamp(2.6rem, 6vh, 3.6rem);
   border-top: 1px solid rgba(227, 205, 155, .08);
   background: var(--void);
   color: var(--mist-dim);
 }
+.colophon p { margin: 0; }
 .colophon .seal-mark { width: 30px; height: 30px; stroke: var(--gold); fill: none;
   stroke-width: .7; opacity: .5; }
 .colophon a { transition: color .4s var(--ease); }
 .colophon a:hover { color: var(--gold-soft); }
 
-/* ---------- 12. desktop — space, not more stuff ---------- */
+/* ---------- 12. the phone — composed, not stacked ---------- */
+
+@media (max-width: 899px) {
+  /* past the threshold the act mark takes the place the lockup
+     has just left, so the two never share the top edge */
+  #parable .act-mark, #awakening .act-mark, #transition .act-mark {
+    bottom: auto; top: clamp(1.15rem, 2.8vh, 1.7rem);
+  }
+  #threshold {
+    --scrim:
+      radial-gradient(ellipse 80% 46% at 50% 54%, rgba(5, 8, 10, .56), transparent 76%),
+      linear-gradient(180deg, rgba(5, 8, 10, .56) 0%, rgba(5, 8, 10, .14) 26%,
+                      rgba(5, 8, 10, .26) 66%, rgba(5, 8, 10, .84) 100%);
+  }
+  #threshold .inner { padding-bottom: 3rem; }
+
+  #awakening {
+    --scrim:
+      linear-gradient(180deg, rgba(5, 8, 10, .5) 0%, rgba(5, 8, 10, .3) 20%,
+                      rgba(5, 8, 10, .56) 48%, rgba(5, 8, 10, .68) 78%, rgba(5, 8, 10, .82) 100%);
+    padding-top: clamp(6.5rem, 16vh, 9rem);
+  }
+  #awakening::before { transform-origin: 50% 40%; }
+
+  #transition {
+    --scene-light: .74;
+    --scrim:
+      linear-gradient(180deg, rgba(5, 8, 10, .42) 0%, rgba(5, 8, 10, .4) 34%,
+                      rgba(5, 8, 10, .66) 62%, rgba(10, 16, 19, .94) 100%);
+    padding-top: clamp(6.5rem, 16vh, 9rem);
+  }
+
+  .invitation { margin-top: .4rem; }
+  .vow { font-size: 1rem; gap: .4rem; }
+
+  /* a deliberate portrait crop: the luminous nebula edge stays in
+     frame with deep negative space around it, not a flat star patch */
+  .night-plate { background-position: var(--scene-pos-narrow, var(--scene-pos, 42% 32%)); }
+  .night-cue { top: 31%; left: var(--edge); }
+
+  .playing {
+    left: var(--gutter); right: var(--gutter); bottom: clamp(10rem, 18vh, 11.5rem);
+    justify-items: start; text-align: left; gap: .45rem;
+  }
+  .playing .row { justify-content: flex-start; gap: .9rem; flex-wrap: wrap; }
+  .playing .progress { width: min(100%, 260px); }
+
+  /* five controls across a phone: tighter, never clipped */
+  .rail { gap: 0; padding-inline: .5rem; }
+  .rail button { min-width: 48px; padding-inline: .3rem; flex: 0 1 auto; }
+  .rail .lbl { font-size: .66rem; letter-spacing: .12em; white-space: nowrap; }
+  .rail .primary { margin-inline: .25rem; min-width: 76px; }
+}
+
+/* ---------- 13. desktop — the copy and the photograph share the frame ---------- */
 
 @media (min-width: 900px) {
+  :root { --edge: clamp(3rem, 7vw, 7rem); }
+
   .creed { display: block; }
   .homeward { display: flex; }
+  .masthead.is-deep:hover .lockup { opacity: .6; visibility: visible; }
 
-  .act { padding-inline: clamp(3rem, 7vw, 6rem); }
+  /* 01 — the title stands in the shade of the near ridge; the far
+     light and the rings hold the right of the frame */
+  #threshold {
+    --scrim:
+      linear-gradient(90deg, rgba(5, 8, 10, .6) 0%, rgba(5, 8, 10, .42) 30%,
+                      rgba(5, 8, 10, .12) 58%, transparent 100%),
+      linear-gradient(180deg, rgba(5, 8, 10, .46) 0%, rgba(5, 8, 10, .08) 22%,
+                      rgba(5, 8, 10, .1) 64%, rgba(5, 8, 10, .74) 100%);
+    text-align: left;
+  }
+  #threshold .inner {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: 4rem; row-gap: clamp(1.6rem, 3.6vh, 2.4rem);
+    justify-items: start;
+  }
+  .hero-title, .hero-creed, .invitation { grid-column: 1; }
+  .hero-title { text-indent: 0; }
+  .halo {
+    grid-column: 2; grid-row: 1 / span 3;
+    align-self: start; justify-self: end;
+    width: clamp(220px, 22vw, 320px); opacity: .17;
+    margin: -14vh 3vw 0 0;
+  }
+  .invitation { grid-auto-flow: column; align-items: center; gap: 1.2rem; margin-top: .4rem; }
 
-  #threshold .inner { gap: 2.6rem; }
-
+  /* 02 — the plate is the left edge of the world, full height,
+     its fog dissolving into the page */
   .parable-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    align-items: center;
-    gap: clamp(3rem, 6vw, 5.5rem);
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    min-height: 100svh;
   }
-  .plate { aspect-ratio: 3 / 4.2; max-height: none; }
+  .plate {
+    height: auto; align-self: stretch;
+    -webkit-mask-image: linear-gradient(90deg, #000 58%, rgba(0, 0, 0, .5) 80%, transparent 100%);
+            mask-image: linear-gradient(90deg, #000 58%, rgba(0, 0, 0, .5) 80%, transparent 100%);
+  }
+  /* The copy used to hug the left of the paper half, leaving ~790px of
+     dead paper on a wide screen. Centring it in the field turns that
+     into balanced margin instead of an accident. */
+  .parable-body {
+    align-self: center;
+    justify-self: center;
+    max-width: calc(var(--measure) + 8rem);
+    padding: clamp(7rem, 14vh, 9rem) clamp(2.5rem, 5vw, 5rem) clamp(6rem, 12vh, 8rem);
+  }
 
+  /* 03 — the question owns the shade of the boulder; the water on
+     the right is left alone to be water */
+  #awakening {
+    min-height: 100svh;
+    /* two soft pools of shade under the beats and the gloss, where the
+       water is busiest; the cascade above and to the right stays lit */
+    --scrim:
+      radial-gradient(ellipse 32% 30% at 20% 62%, rgba(5, 8, 10, .54), transparent 74%),
+      radial-gradient(ellipse 26% 20% at 22% 84%, rgba(5, 8, 10, .56), transparent 76%),
+      linear-gradient(90deg, rgba(5, 8, 10, .64) 0%, rgba(5, 8, 10, .44) 34%,
+                      rgba(5, 8, 10, .12) 66%, transparent 100%),
+      linear-gradient(180deg, rgba(5, 8, 10, .42) 0%, transparent 22%,
+                      transparent 54%, rgba(5, 8, 10, .46) 78%, rgba(5, 8, 10, .82) 100%);
+  }
+  .beat span, .gloss.dark .mean {
+    text-shadow: 0 1px 2px rgba(5, 8, 10, .9), 0 1px 22px rgba(5, 8, 10, .95), 0 0 6px rgba(5, 8, 10, .8);
+  }
+  /* The gloss used to sit in a second column at 48% across, which put
+     it on the brightest white water on the site — the lowest-contrast
+     text in the build. Everything now stacks inside the boulder's
+     shadow on the left, and the water on the right is left alone. */
   #awakening .inner {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
-    align-items: center;
-    column-gap: clamp(3rem, 7vw, 6rem);
+    grid-template-columns: minmax(0, 33rem);
+    grid-template-rows: auto auto auto;
+    row-gap: clamp(1.5rem, 3.6vh, 2.3rem);
+    justify-content: start; align-items: end;
   }
-  .question { grid-column: 1; }
-  .beat     { grid-column: 2; grid-row: 1; }
-  .gloss.dark { grid-column: 2; }
+  .question { grid-column: 1; grid-row: 1; max-width: 17ch; }
+  .beat      { grid-column: 1; grid-row: 2; }
+  .gloss.dark { grid-column: 1; grid-row: 3; max-width: 31rem; }
 
-  .vow { font-size: clamp(1.2rem, 1.8vw, 1.6rem); }
-  .rail { gap: 2.4rem; }
+  /* 04 — copy in the shade on the left, ink ensō on the sky over the peak */
+  #transition { min-height: 100svh; }
+  #transition .inner {
+    grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+    align-items: center; column-gap: 4rem;
+    justify-items: start;
+  }
+  .turn-title, .turn-body, .begin { grid-column: 1; }
+  .turn-title { text-indent: 0; }
+  .enso {
+    grid-column: 2; grid-row: 1 / span 3;
+    align-self: start; justify-self: center;
+    width: clamp(190px, 17vw, 250px);
+    margin: -1vh 0 0 6vw;          /* the peak just breaks the ring */
+  }
+  /* Ink on the sky reads, but the ring crossed the dark peak and
+     vanished into it. A soft halo lifts it off both the sky and the
+     mountain without turning it into a bright graphic. */
+  /* overflow:visible matters: an <svg> clips to its viewport by
+     default, which chopped the bloom into a visible rectangle. */
+  .enso { width: clamp(205px, 18.5vw, 272px); overflow: visible; }
+  .enso path { fill: #121a1e; }
+  /* A pale bloom around the ink, so the ring separates from the sky
+     AND from the dark peak it crosses. drop-shadow, not a ::before —
+     a pseudo-element generates no box on an inline <svg>. */
+  .enso .stroke {
+    filter: drop-shadow(0 0 13px rgba(236, 240, 242, .5))
+            drop-shadow(0 0 30px rgba(226, 233, 236, .26));
+  }
+  .enso .bleed { fill: #0b1114; opacity: .2; }
+
+  /* 05 */
+  .vow { top: auto; bottom: clamp(6.5rem, 12vh, 8rem); font-size: clamp(1.2rem, 1.8vw, 1.5rem); }
+  .rail { gap: 1.6rem; }
 }
 
 @media (min-width: 1400px) {
   :root { --measure: 36rem; }
 }
 
-/* ---------- 13. stillness ---------- */
+/* ---------- 14. stillness ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -660,8 +1268,41 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .scroll-cue .line { animation: none; opacity: .6; }
   .enso.is-in .stroke { animation: none; }
   .invitation.is-playing .bars i { animation: none; height: 9px; }
+  #awakening::before { transform: none; transition: none; }
+  .night-veil, .night-stars, .night-plate, .night-plate::after,
+  .night-nebula, .night-haze { animation: none !important; transform: none !important; }
   *, *::before, *::after {
     animation-duration: .001ms !important;
     transition-duration: .001ms !important;
   }
+
+  /* the one deliberate exception: Dusk/Dawn is still a day/night
+     *change*, not a swap. Reduced motion drops the drift, the scale,
+     the shimmer and the cue word entirely, but the atmosphere itself
+     has to read as a calm, opacity-only cross-dissolve — the blanket
+     .001ms above would otherwise make it instant, which is exactly
+     the "full-frame swap" this was built to avoid. Class selectors
+     out-specificity the universal one above even at equal !important
+     weight, so these win regardless of source order. */
+  .night-veil,
+  .night-plate,
+  #garden,
+  .vow,
+  .garden-stage::after,
+  .playing {
+    transition-duration: 2.2s !important;
+  }
+  .night-plate { transition-duration: 2.8s !important; }
+  .playing { transition-duration: .9s !important; }
+  #sanctuary.is-leaving .night-veil,
+  #sanctuary.is-leaving .night-plate,
+  #sanctuary.is-leaving #garden,
+  #sanctuary.is-leaving .vow,
+  #sanctuary.is-leaving .garden-stage::after,
+  #sanctuary.is-leaving .playing {
+    /* the JS sets this per-exit (early vs the recording's own end);
+       under reduced motion it is the same short, calm figure */
+    transition-duration: var(--leave-seconds) !important;
+  }
+  .night-cue { display: none; }
 }

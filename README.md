@@ -12,7 +12,7 @@ can actually sit in.
 | 02 | **The Parable** | The page inverts to parchment. The story, paced, with glosses. |
 | 03 | **The Awakening** | *"Do you hear the sound of that mountain stream?"* If sound is on, the stream comes forward here. |
 | 04 | **The Transition** | A brush ensō. *Enter Zen From Here.* |
-| 05 | **The Sanctuary** | A rakeable dry garden, a meditation timer, sound, atmosphere, fullscreen. |
+| 05 | **The Sanctuary** | A rakeable dry garden at dawn, a meditation timer, sound, fullscreen — and **Dusk**: the garden goes to night, the stars come in over it, and *Episode 1 — Kill the Noise* (`assets/audio/KTN.mp3`, 5:36) plays. Dawn, or the end of the recording, brings the light back. |
 
 ---
 
@@ -42,10 +42,13 @@ assets/css/zen.css         tokens + every section
 assets/js/zen.js           journey, reveals, masthead, timer, controls
 assets/js/audio.js         synthesised stream, bell, rake, stone
 assets/js/garden.js        the raked-sand canvas
-assets/images/scenes/      threshold · parable · awakening · transition
+assets/js/cosmos.js        the night's eleven scenes, timed to the recording
+assets/images/scenes/      threshold · parable · awakening · transition (.webp + .jpg)
+assets/images/cosmos/      sun · 4 planets · 3 asteroids · comet (.webp, alpha)
 docs/DESIGN-SYSTEM.md      colour, type, spacing, components, decisions
-docs/ART-BRIEF.md          ← the art is placeholder; this says how to fix it
+docs/ART-BRIEF.md          what each scene is, how it is graded, how to replace one
 docs/enso.py               regenerates the ensō brush path
+docs/track-phases.py       re-derives the night's scene timings from the audio
 backup/index-legacy.html   the previous single-file site
 ```
 
@@ -53,9 +56,12 @@ backup/index-legacy.html   the previous single-file site
 
 ## Two things to know
 
-**The art is placeholder.** All four scenes are re-crops of one 1024×768
-photo. Dropping real files at the same paths is the entire fix — no code
-changes. See `docs/ART-BRIEF.md` for sizes and prompts.
+**The four scenes are real, distinct pictures.** Each act carries its own
+photograph, its own grade and its own scrim, tuned in `zen.css` under the
+act's id. Each ships as WebP with a JPEG fallback via `image-set()`. To
+swap one, replace both files at the same path and re-check the
+`--scene-pos` / `--scene-pos-narrow` crops in `index.html`. See
+`docs/ART-BRIEF.md`.
 
 **All sound is synthesised in the browser.** The old site hotlinked five
 clips from soundbible.com and every one of them is now a 404 — including
