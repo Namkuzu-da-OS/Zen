@@ -80,9 +80,14 @@ export const Sound = (() => {
     return streamBuf;
   }
 
+  /* How loud the water sits under everything else. Separate from
+     LEVEL, which is the module's master and also carries the rake and
+     the stones — turning that down would quieten the garden too. */
+  const STREAM_LEVEL = 0.58;
+
   function playSample(buf) {
     const out = ctx.createGain();
-    out.gain.value = 1;
+    out.gain.value = STREAM_LEVEL;
 
     /* Two copies of the same loop, started half a loop apart and
        panned wide. One mono source played straight is a point — a
@@ -132,7 +137,7 @@ export const Sound = (() => {
     const brown = noiseBuffer(6, 'brown');
     const white = noiseBuffer(6, 'white');
     const out = ctx.createGain();
-    out.gain.value = 1;
+    out.gain.value = STREAM_LEVEL;      // match the recording it stands in for
 
     const layer = (buf, rate, type, freq, q, gain) => {
       const src = ctx.createBufferSource();
