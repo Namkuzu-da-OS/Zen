@@ -81,17 +81,39 @@ export const Sound = (() => {
   }
 
   function playSample(buf) {
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
     const out = ctx.createGain();
     out.gain.value = 1;
-    src.connect(out);
-    src.start();
+
+    /* Two copies of the same loop, started half a loop apart and
+       panned wide. One mono source played straight is a point — a
+       single jet hitting one spot, which is what it sounded like.
+       Offsetting by half the loop decorrelates the two sides
+       completely and permanently, so it becomes a field of water you
+       are standing in rather than a thing in front of you. Costs no
+       extra bytes: it is the same buffer twice. */
+    const half = buf.duration / 2;
+    const nodes = [];
+    /* Near-hard pan: StereoPanner uses an equal-power law, so at
+       +/-0.72 each copy still bleeds heavily into the opposite
+       channel and the two sides measured 0.44 correlated - wider
+       than mono, but not a field. */
+    [[0, -0.95], [half, 0.95]].forEach(([offset, pan]) => {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      const g = ctx.createGain();
+      g.gain.value = 0.72;            // two sources, so back each off
+      if (p) { p.pan.value = pan; src.connect(p).connect(g).connect(out); }
+      else src.connect(g).connect(out);
+      src.start(0, offset);
+      nodes.push(src);
+    });
+
     // No filter wander on top. Slow modulation is exactly what made
     // the synthesised version sound like surf; the recording already
     // has all the movement it needs.
-    return { out, nodes: [src] };
+    return { out, nodes };
   }
 
   /* --- the fallback: a synthesised stream ---
