@@ -140,7 +140,12 @@ export const Sound = (() => {
   function bell(when = 0, strength = 1) {
     if (!wake()) return;
     const t = ctx.currentTime + when;
-    const fundamental = 174;
+    /* Pitch is not a neutral choice here — a lower bell reads as
+       settling, a higher one as alerting, and this one rings at the
+       end of a meditation. F3 was too bright for that job; D3 sits
+       under it without becoming a drone. Every partial below is a
+       ratio, so this one number moves the whole bell. */
+    const fundamental = 146.8;            // D3
     const partials = [
       [1.00, 1.00, 9.0],
       [2.01, 0.52, 6.4],
@@ -177,7 +182,8 @@ export const Sound = (() => {
     hit.buffer = noiseBuffer(0.3);
     const hitFilter = ctx.createBiquadFilter();
     hitFilter.type = 'bandpass';
-    hitFilter.frequency.value = 2400;
+    // the strike moves with the body, or a low bell still reads bright
+    hitFilter.frequency.value = 2000;
     hitFilter.Q.value = 1.2;
     const hitGain = ctx.createGain();
     hitGain.gain.setValueAtTime(0.5 * strength, t);

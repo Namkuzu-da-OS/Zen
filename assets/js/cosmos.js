@@ -78,11 +78,11 @@ export const SCENES = [
   // now we slowly return
   { at: 289.6, name:'return',   field:.14, pace:.22, sun:1,   orbit:.8,  debris:.08, chaos:0,   crowd:0,  spread:1.25, depart:1,  pulse:0, bloom:1.2, breath:1, dim:0,   cast:1 },
   // "open your eyes" — the vignette lifts, centre-out
-  { at: 299,   name:'open',     field:.18, pace:.28, sun:1,   orbit:.7,  debris:.04, chaos:0,   crowd:0,  spread:1.3,  depart:1,  pulse:1, bloom:1.35,breath:1, dim:0,   cast:1 },
+  { at: 299,   name:'open',     field:.18, pace:.28, sun:1,   orbit:.7,  debris:.04, chaos:0,   crowd:0,  spread:1.3,  depart:1,  pulse:1, bloom:1.35,breath:1, dim:0,   cast:1, wave:1 },
   /* He stops speaking at 5:12; the last 23s is instrumental. The close
      is the ember alone — an earlier pass shrank and dimmed the sun
      here, which is the exact opposite of "you are the sun". */
-  { at: 312,   name:'rest',     field:.06, pace:.14, sun:1,   orbit:0,   debris:0,   chaos:0,   crowd:0,  spread:1.4,  depart:1,  pulse:0, bloom:.55, breath:1, dim:0,   cast:0 }
+  { at: 312,   name:'rest',     field:.34, pace:.14, sun:1,   orbit:0,   debris:0,   chaos:0,   crowd:0,  spread:1.4,  depart:1,  pulse:0, bloom:.55, breath:1, dim:0,   cast:0, wave:1 }
 ];
 
 /* Where he stops and leaves the listener to practise, plus the
@@ -91,6 +91,30 @@ export const SCENES = [
    loudness never reads as quiet, and Whisper's segment end times are
    padded and reported no gaps at all. Through these the system crawls. */
 const HOLDS = [[213, 222], [312, 336]];
+
+/* The closing pulses fire on these, in seconds.
+   They were on an internal 10s breath clock that started when the
+   canvas did, so they had no relationship to the audio whatsoever and
+   drifted against it.
+
+   Worth knowing before changing them: the outro is NOT a bed of tones.
+   Spectral flux across 5:12-5:36 finds no discrete onsets at all, and
+   the envelope there is a fade-out, not a swelling pad — loud and flat
+   to about 5:21, then decaying to silence. So the last real musical
+   movement in the piece is these four events, measured as envelope
+   swells with >= 1.5 dB prominence, which land right as he finishes
+   speaking. Everything after is the track letting go, and the pulses
+   let go with it because their brightness follows the live level.
+
+   These are ATTACK times — the steepest rise in a 50 ms-smoothed
+   envelope. The first pass peak-picked a 1.05 s smoothed envelope
+   instead, which put every pulse a measured 268 ms average ahead of
+   the sound it was meant to land on. An onset is the attack, not the
+   top of a smoothed swell. (Output latency is not a factor here: this
+   machine reports 10 ms base and 0 output.)
+
+   Re-derive with docs/track-phases.py --tones. */
+const TONES = [307.29, 310.59, 313.25, 316.09];
 
 export function createCosmos(canvas, { audioEl, getContext }) {
   const c = canvas.getContext('2d', { alpha: true });
@@ -143,11 +167,12 @@ export function createCosmos(canvas, { audioEl, getContext }) {
 
   /* --- the look --- */
   const KEYS = ['field','pace','sun','orbit','debris','chaos','crowd',
-                'spread','depart','pulse','bloom','breath','dim','cast'];
+                'spread','depart','pulse','bloom','breath','dim','cast','wave'];
   const look = {};
   let sceneIdx = -1;
   let target = SCENES[0];
-  KEYS.forEach(k => look[k] = SCENES[0][k]);
+  KEYS.forEach(k => look[k] = SCENES[0][k] || 0);   // || 0: a key the
+  // first scene omits would otherwise seed NaN and poison it forever
 
   /* --- bodies ---
      Radii are deliberately unevenly spaced: arithmetic spacing reads as
@@ -176,6 +201,10 @@ export function createCosmos(canvas, { audioEl, getContext }) {
   let motes = [];
   let orbitT = 0, breathT = 0, swirl = 0;
   let noticeT = 0, noticeIdx = 0;
+  let waves = [];          // the closing pulses
+  let toneIdx = 0;         // which of TONES we are waiting for
+  let lastT = 0;           // to notice a seek and re-arm
+  let level = 0;           // the track's live loudness, 0..1
 
   function seedDebris() {
     debris = new Array(DEBRIS_N).fill(0).map((_, i) => {
@@ -242,11 +271,20 @@ export function createCosmos(canvas, { audioEl, getContext }) {
   const holding = (t) => HOLDS.some(([a, b]) => t >= a && t <= b);
 
   function read(dt) {
-    if (!analyser) { voice += (.4 - voice) * Math.min(1, dt * 2); return; }
+    if (!analyser) {
+      voice += (.4 - voice) * Math.min(1, dt * 2);
+      level += (.5 - level) * Math.min(1, dt * 2);
+      return;
+    }
     analyser.getByteFrequencyData(freq);
     let mid = 0;
     for (let i = 4; i < 40; i++) mid += freq[i];
     voice += (mid / (36 * 255) - voice) * Math.min(1, dt * 5);
+    // the whole band, slowly: this is what lets the closing pulses fade
+    // out with the track instead of ending abruptly
+    let all = 0;
+    for (let i = 1; i < freq.length; i++) all += freq[i];
+    level += (all / ((freq.length - 1) * 255) - level) * Math.min(1, dt * 1.2);
   }
 
   function ease(dt) {
@@ -255,7 +293,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
       // the sun arriving is the one event in the piece that should be
       // quick: everything else drifts in over 3-4s, this lands in ~1.5
       const rate = key === 'sun' ? Math.min(1, dt * 1.4) : k;
-      look[key] += (target[key] - look[key]) * rate;
+      look[key] += ((target[key] || 0) - look[key]) * rate;
     }
   }
 
@@ -317,8 +355,39 @@ export function createCosmos(canvas, { audioEl, getContext }) {
 
     /* --- the trail layer: smear, then this frame's mote segments --- */
     tc.globalCompositeOperation = 'destination-out';
-    tc.fillStyle = 'rgba(0,0,0,.06)';
+    tc.fillStyle = 'rgba(0,0,0,.17)';
     tc.fillRect(0, 0, W, H);
+    tc.globalCompositeOperation = 'lighter';
+
+    /* A pulse leaves on each of the track's closing events. Seeking
+       backwards re-arms the list; seeking forwards skips what was
+       jumped over rather than firing a burst of them at once. */
+    if (t < lastT - .3 || t > lastT + 1.5) {
+      toneIdx = 0;
+      while (toneIdx < TONES.length && TONES[toneIdx] <= t) toneIdx++;
+    } else if (look.wave > .25) {
+      while (toneIdx < TONES.length && t >= TONES[toneIdx]) {
+        waves.push({ r: unit * SUN_SIZE * .5, life: 1 });
+        toneIdx++;
+      }
+    }
+    lastT = t;
+
+    const maxWave = Math.hypot(W, H) * .62;
+    for (let i = waves.length - 1; i >= 0; i--) {
+      const w = waves[i];
+      w.r += dt * maxWave * .085;              // slow: ~12s to cross
+      w.life -= dt * .075;
+      if (w.life <= 0 || w.r > maxWave) { waves.splice(i, 1); continue; }
+      // this is the part that matters: the wake is erased where the
+      // pulse crosses it, so the noise is actually taken away
+      tc.globalCompositeOperation = 'destination-out';
+      tc.strokeStyle = 'rgba(0,0,0,.85)';
+      tc.lineWidth = unit * .085;
+      tc.beginPath();
+      tc.ellipse(cx, cy, w.r, w.r * .84, 0, 0, Math.PI * 2);
+      tc.stroke();
+    }
     tc.globalCompositeOperation = 'lighter';
 
     const pace = (10 + 22 * look.pace) * pace0;
@@ -329,7 +398,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
                + Math.cos(m.y * .0021 - orbitT * .14)) * 1.4 + swirl;
       const nx = m.x + Math.cos(a) * pace * m.z * dt;
       const ny = m.y + Math.sin(a) * pace * m.z * .72 * dt;
-      const al = .075 * (.4 + m.z * .6);
+      const al = .055 * (.4 + m.z * .6) * Math.min(1, .35 + look.field * 1.6);
       tc.strokeStyle = m.warm ? `rgba(227,205,155,${al})` : `rgba(176,200,216,${al})`;
       tc.lineWidth = .6 + m.z;
       tc.beginPath(); tc.moveTo(m.x, m.y); tc.lineTo(nx, ny); tc.stroke();
@@ -452,7 +521,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         let sy = cy + d.ay * unit * .5;
         if (look.crowd > .01) {
           const ang = Math.atan2(d.ay, d.ax);
-          const ring = unit * .5 * (.5 + .25 * Math.abs(Math.sin(d.phase * 3)));
+          const ring = unit * .5 * (.24 + .17 * Math.abs(Math.sin(d.phase * 3)));
           sx += (cx + Math.cos(ang) * ring - sx) * look.crowd;
           sy += (cy + Math.sin(ang) * ring * .72 - sy) * look.crowd;
         }
@@ -463,7 +532,9 @@ export function createCosmos(canvas, { audioEl, getContext }) {
 
         const lit = d.noticed;
         const alpha = look.debris * look.cast * (1 - d.push * .8) * (.55 + lit * .45);
-        sprite(d.key, x, y, unit * d.size, alpha, d.rot);
+        // closing in means getting bigger, or it is not closing in
+        const grow = 1 + look.crowd * .85;
+        sprite(d.key, x, y, unit * d.size * grow, alpha, d.rot);
 
         if (lit > .01) {
           c.globalCompositeOperation = 'lighter';
@@ -493,6 +564,31 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         const y = cy + Math.sin(a) * rad * b.tilt;
         const alpha = Math.min(1, look.orbit) * (1 - leave);
         sprite(b.key, x, y, unit * b.size * (.72 + look.orbit * .28), alpha, 0);
+      }
+    }
+
+    /* 6b. the closing pulses, seen — a soft shell of light leaving on
+       each out-breath, not a ring outline */
+    if (waves.length) {
+      c.globalCompositeOperation = 'lighter';
+      const band = unit * .075;
+      for (const w of waves) {
+        const a = w.life * .42 * look.wave * Math.min(1, .25 + level * 2.2);
+        if (a < .005) continue;
+        c.save();
+        c.translate(cx, cy);
+        c.scale(1, .84);                       // the family's ellipse
+        const inner = Math.max(0, w.r - band);
+        const g = c.createRadialGradient(0, 0, inner, 0, 0, w.r + band);
+        g.addColorStop(0,   'rgba(227,205,155,0)');
+        g.addColorStop(.45, `rgba(233,214,168,${a})`);
+        g.addColorStop(.62, `rgba(201,169,97,${a * .55})`);
+        g.addColorStop(1,   'rgba(201,169,97,0)');
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(0, 0, w.r + band, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
       }
     }
 
@@ -534,9 +630,9 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         c.setTransform(DPR, 0, 0, DPR, 0, 0);
         c.clearRect(0, 0, W, H);
         if (tc) tc.clearRect(0, 0, W, H);
-        sceneIdx = -1; breathT = 0;
+        sceneIdx = -1; breathT = 0; waves = []; toneIdx = 0; lastT = 0;
         target = SCENES[0];
-        KEYS.forEach(k => look[k] = SCENES[0][k]);
+        KEYS.forEach(k => look[k] = SCENES[0][k] || 0);
         seedDebris();
       }
     },
