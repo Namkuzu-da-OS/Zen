@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=36';
-import { createGarden } from './garden.js?v=36';
-import { createCosmos, SCENES } from './cosmos.js?v=36';
+import { Sound } from './audio.js?v=39';
+import { createGarden } from './garden.js?v=39';
+import { createCosmos, SCENES } from './cosmos.js?v=39';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -407,7 +407,11 @@ function wireNight(garden) {
     if (reason === 'ended') {
       audio.pause();
       audio.currentTime = 0;
-      Sound.bell(0.6, 0.55);            // one soft note to close
+      /* The closing bell is off on purpose — it did not sit right at
+         the end of the night. Parked rather than removed: uncomment to
+         restore, and its pitch lives in bell() in audio.js, currently
+         D3 (146.8 Hz). */
+      // Sound.bell(0.6, 0.55);
     } else {
       // early exit: the voice fades, then the recording goes back to the start
       fadeTo(0, reduced ? 0 : 1, () => { audio.pause(); audio.currentTime = 0; });

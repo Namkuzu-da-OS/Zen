@@ -262,11 +262,14 @@ export function createGarden(canvas, { onRake, onStone } = {}) {
   }
 
   /* a rake has tines. Three parallel grooves follow the hand. */
-  function rakeStroke(c, pts, width) {
+  function rakeStroke(c, pts, width, single) {
     if (pts.length < 2) return;
-    const gap = width * 0.72;
-    const tines = [-gap, 0, gap];
+    // a dragged stone ploughs one groove, not a rake head's five
+    if (single) { groove(c, pts, width * .5, .85, .9); return; }
+    const gap = width * 1.15;
+    const tines = [-2 * gap, -gap, 0, gap, 2 * gap];
     for (const off of tines) {
+      const bite = 1 - Math.abs(off) / (gap * 3.4);   // outer teeth, lighter
       const line = [];
       for (let i = 0; i < pts.length; i++) {
         const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
@@ -275,7 +278,7 @@ export function createGarden(canvas, { onRake, onStone } = {}) {
         // the normal, so the tines stay beside the path as it turns
         line.push({ x: pts[i].x - (dy / len) * off, y: pts[i].y + (dx / len) * off });
       }
-      groove(c, line, width * 0.34, off === 0 ? 1 : .8, off === 0 ? 1 : .85);
+      groove(c, line, width * 0.34 * (.7 + bite * .3), bite, .82 + bite * .18);
     }
   }
 
@@ -310,7 +313,7 @@ export function createGarden(canvas, { onRake, onStone } = {}) {
     c.clearRect(0, 0, W, H);
     c.drawImage(baseLayer, 0, 0, W, H);
     ripples(c);
-    strokes.forEach((s) => rakeStroke(c, s.pts, s.w));
+    strokes.forEach((s) => rakeStroke(c, s.pts, s.w, s.single));
     sandDirty = false;
   }
 
@@ -452,7 +455,14 @@ export function createGarden(canvas, { onRake, onStone } = {}) {
     const p = at(e);
     const s = stoneAt(p);
     if (s) {
+      /* A stone dragged across a dry garden ploughs it. One wide
+         furrow the width of the stone — the same mechanism as the
+         rake, coarser, and it makes moving a stone feel like moving
+         something heavy instead of sliding a sticker. */
       dragging = { s, ox: p.x - s.x, oy: p.y - s.y };
+      current = { pts: [{ x: s.x, y: s.y }], w: Math.max(9, s.ry * 1.15), single: true };
+      strokes.push(current);
+      sandDirty = true;
       onStone && onStone();
     } else {
       current = { pts: [p], w: 6 };
@@ -467,6 +477,13 @@ export function createGarden(canvas, { onRake, onStone } = {}) {
       const p = at(e);
       dragging.s.x = p.x - dragging.ox;
       dragging.s.y = p.y - dragging.oy;
+      if (current) {
+        const last = current.pts[current.pts.length - 1];
+        if (Math.hypot(dragging.s.x - last.x, dragging.s.y - last.y) > 4) {
+          current.pts.push({ x: dragging.s.x, y: dragging.s.y });
+          onRake && onRake(.55);        // it sounds like sand, because it is
+        }
+      }
       sandDirty = true;       // the ripples follow the stone
       invalidate();
       return;

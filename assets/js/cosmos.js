@@ -92,29 +92,26 @@ export const SCENES = [
    padded and reported no gaps at all. Through these the system crawls. */
 const HOLDS = [[213, 222], [312, 336]];
 
-/* The closing pulses fire on these, in seconds.
-   They were on an internal 10s breath clock that started when the
-   canvas did, so they had no relationship to the audio whatsoever and
-   drifted against it.
+/* The closing pulses fire on these, in seconds. Tapped by ear with
+   docs/sync.html, because the ending cannot be measured:
 
-   Worth knowing before changing them: the outro is NOT a bed of tones.
-   Spectral flux across 5:12-5:36 finds no discrete onsets at all, and
-   the envelope there is a fade-out, not a swelling pad — loud and flat
-   to about 5:21, then decaying to silence. So the last real musical
-   movement in the piece is these four events, measured as envelope
-   swells with >= 1.5 dB prominence, which land right as he finishes
-   speaking. Everything after is the track letting go, and the pulses
-   let go with it because their brightness follows the live level.
+     - spectral flux finds NO discrete onsets between 5:12 and 5:36
+     - envelope-swell picking gave gaps of 3.30 / 2.66 / 2.84s,
+       irregular, and audibly wrong on the second pulse
+     - tempo autocorrelation after he stops speaking reads 0.038,
+       which is noise, and two windows disagreed by 26 BPM
 
-   These are ATTACK times — the steepest rise in a 50 ms-smoothed
-   envelope. The first pass peak-picked a 1.05 s smoothed envelope
-   instead, which put every pulse a measured 268 ms average ahead of
-   the sound it was meant to land on. An onset is the attack, not the
-   top of a smoothed swell. (Output latency is not a factor here: this
-   machine reports 10 ms base and 0 output.)
+   What went wrong was the phase, not the tempo. 178.2 BPM was real:
+   the tapped gaps average 2.69s, which is 7.99 beats at that tempo —
+   two bars of 4/4 — so his ear landed on the grid that the
+   autocorrelation had found. My placement was a consistent ~670ms
+   late after the first mark, very nearly two beats.
 
-   Re-derive with docs/track-phases.py --tones. */
-const TONES = [307.29, 310.59, 313.25, 316.09];
+   The fifth mark sits 8.8s after the fourth, out in the fade.
+
+   If the audio is ever replaced, do not try to derive these. Open
+   docs/sync.html, tap, and paste. */
+const TONES = [307.36, 309.93, 312.55, 315.43, 324.23];
 
 export function createCosmos(canvas, { audioEl, getContext }) {
   const c = canvas.getContext('2d', { alpha: true });

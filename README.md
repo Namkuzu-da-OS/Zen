@@ -49,6 +49,7 @@ docs/DESIGN-SYSTEM.md      colour, type, spacing, components, decisions
 docs/ART-BRIEF.md          what each scene is, how it is graded, how to replace one
 docs/enso.py               regenerates the ensō brush path
 docs/track-phases.py       re-derives the night's scene timings from the audio
+docs/sync.html             tap-by-ear tool for the closing pulse times (see below)
 backup/index-legacy.html   the previous single-file site
 ```
 
@@ -70,6 +71,28 @@ the stream from filtered noise and the temple bell from inharmonic
 partials, so there is nothing left to break.
 
 ---
+
+## Timing the night by ear
+
+`docs/sync.html` — open it, play, press `space` where a pulse belongs,
+copy the array into `TONES` in `assets/js/cosmos.js`, run `./bump.sh`.
+Nothing links to it; it is a tool.
+
+It exists because the recording's ending genuinely cannot be measured.
+Spectral flux finds no discrete onsets after 5:12, envelope-swell
+picking produced irregular gaps that were audibly wrong, and tempo
+autocorrelation across the post-speech region reads 0.038 — noise.
+
+The tool defaults the trim to **−200 ms** because a tap always lands
+late, and it flags any interval more than 25% off the median, which is
+the check that would have caught the bad automated values before
+anyone had to hear them.
+
+Worth knowing: the tapped marks came out at 2.69s apart, which is 7.99
+beats at the 178.2 BPM the autocorrelation measured — two bars of 4/4.
+The tempo analysis was right; only its phase was wrong. So if these
+ever need redoing, the grid is real and 2 bars is the interval; it is
+the offset that needs an ear.
 
 ## Accessibility
 
