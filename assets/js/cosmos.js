@@ -224,7 +224,12 @@ export function createCosmos(canvas, { audioEl, getContext }) {
   let waves = [];          // the closing pulses
   let beatIdx = 0, lastBeat = 0;
   let queue = [];          // staggered sub-events, [{at, fn}]
-  let cinch = 0, inrush = 0;
+  /* Each of these is a pair: the goal is what a beat sets and then
+     decays, and the value eases toward the goal. A beat therefore
+     arrives as a swell rather than a step — anything that moves a
+     body has to be eased, or it reads as a hitch. */
+  let cinchGoal = 0, cinch = 0;
+  let inrushGoal = 0, inrush = 0;
   let toneIdx = 0;         // which of TONES we are waiting for
   let lastT = 0;           // to notice a seek and re-arm
   let level = 0;           // the track's live loudness, 0..1
@@ -246,7 +251,8 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         phase: Math.random() * Math.PI * 2,
         size: .020 + Math.random() * .030,
         noticed: 0,        // brightens once, then eases out and fades
-        push: 0
+        push: 0,
+        home: 0            // travelling back to its orbit
       };
     });
     noticeIdx = 0; noticeT = 0;
@@ -317,9 +323,12 @@ export function createCosmos(canvas, { audioEl, getContext }) {
           }});
         });
         break;
-      case 'cinch':  cinch = 1;  break;
-      case 'inrush': inrush = 1; break;
-      case 'rejoin': debris.forEach((d) => { d.push = 0; d.noticed = 0; }); break;
+      case 'cinch':  cinchGoal = 1;  break;
+      case 'inrush': inrushGoal = 1; break;
+      case 'rejoin':
+        // they travel home rather than snapping back to the orbit
+        debris.forEach((d) => { d.noticed = 0; d.home = 1; });
+        break;
     }
   }
 
@@ -394,8 +403,11 @@ export function createCosmos(canvas, { audioEl, getContext }) {
     lastBeat = t;
     queue.sort((p, q) => p.at - q.at);
     while (queue.length && t >= queue[0].at) queue.shift().fn();
-    cinch  = Math.max(0, cinch  - dt * .26);
-    inrush = Math.max(0, inrush - dt * .34);
+    cinchGoal  = Math.max(0, cinchGoal  - dt * .26);
+    inrushGoal = Math.max(0, inrushGoal - dt * .34);
+    // ~0.7s to arrive, so a beat swells in instead of snapping
+    cinch  += (cinchGoal  - cinch)  * Math.min(1, dt * 1.5);
+    inrush += (inrushGoal - inrush) * Math.min(1, dt * 1.5);
 
     read(dt);
     ease(dt);
@@ -579,6 +591,10 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         if (d.noticed > 0) {
           d.noticed = Math.max(0, d.noticed - dt * .14);   // ~7s to let go
           d.push += dt * .10;
+        } else if (d.home > 0) {
+          // sent home by a beat: it comes back in over about 3s
+          d.home = Math.max(0, d.home - dt * .34);
+          d.push = Math.max(0, d.push - dt * .30);
         } else if (d.push > 0) {
           d.push = Math.max(0, d.push - dt * .04);
         }
@@ -638,8 +654,8 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         const y = cy + Math.sin(a) * rad * b.tilt;
         const alpha = Math.min(1, look.orbit) * (1 - leave);
         if (b.lit > 0) b.lit = Math.max(0, b.lit - dt * .5);   // about 2s
-        sprite(b.key, x, y, unit * b.size * (.72 + look.orbit * .28) * (1 + b.lit * .12),
-               alpha, 0);
+        // the glow announces it; scaling the body as well was a pop
+        sprite(b.key, x, y, unit * b.size * (.72 + look.orbit * .28), alpha, 0);
         if (b.lit > .01) {
           c.globalCompositeOperation = 'lighter';
           const s2 = unit * b.size * 2.4;
@@ -717,7 +733,8 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         c.clearRect(0, 0, W, H);
         if (tc) tc.clearRect(0, 0, W, H);
         sceneIdx = -1; breathT = 0; waves = []; toneIdx = 0; lastT = 0;
-        beatIdx = 0; lastBeat = 0; queue = []; cinch = 0; inrush = 0;
+        beatIdx = 0; lastBeat = 0; queue = [];
+        cinch = cinchGoal = inrush = inrushGoal = 0;
         BODIES.forEach((b) => b.lit = 0);
         target = SCENES[0];
         KEYS.forEach(k => look[k] = SCENES[0][k] || 0);
