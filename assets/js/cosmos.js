@@ -113,6 +113,29 @@ const HOLDS = [[213, 222], [312, 336]];
    docs/sync.html, tap, and paste. */
 const TONES = [307.36, 309.93, 312.55, 315.43, 324.23];
 
+/* --- beats ---
+   Finer than the scenes, from the same timestamped transcript: eight
+   moments where the narration names something concrete enough to
+   answer on screen. The scenes set the weather; these are single
+   events inside it.
+
+   `lit` brightens n rocks in turn, `announce` lights one of each kind
+   of body, `cinch` draws every orbit in and lets it settle, `inrush`
+   pulls the debris toward the centre for a moment, and `rejoin` sends
+   whatever was pushed away back to its orbit.
+
+   Only the timings and these short labels live here. */
+const BEATS = [
+  { at:  97.32, act:'lit',      n:3, gap:.34 },  // something going off in a pocket
+  { at: 101.08, act:'lit',      n:1 },           // and the ones from inside your own head
+  { at: 119.72, act:'cinch'              },      // the pressure of competing
+  { at: 156.52, act:'announce'           },      // he names planets, asteroids, comets
+  { at: 184.16, act:'inrush'             },      // little ones spiralling toward you
+  { at: 221.80, act:'lit',      n:4, gap:.95 },  // four feelings, one after another
+  { at: 231.04, act:'rejoin'             },      // let it return to its own orbit
+  { at: 278.12, act:'cinch'              }       // your own gravitational force
+];
+
 export function createCosmos(canvas, { audioEl, getContext }) {
   const c = canvas.getContext('2d', { alpha: true });
 
@@ -179,15 +202,15 @@ export function createCosmos(canvas, { audioEl, getContext }) {
      smallest r must exceed SUN_SIZE. */
   const SUN_SIZE = .17;
   const BODIES = [
-    { key:'moon',     r:.30, speed:-.26, size:.038, tilt:.66, phase:5.3 },
-    { key:'gasgiant', r:.40, speed: .16, size:.105, tilt:.58, phase:0.4 },
+    { key:'moon',     r:.30, speed:-.26, size:.038, tilt:.66, phase:5.3, lit:0 },
+    { key:'gasgiant', r:.40, speed: .16, size:.105, tilt:.58, phase:0.4, lit:0 },
     // the one that leaves, when he talks about letting things go. Pale,
     // so it stays legible all the way out.
     { key:'ice',      r:.63, speed:-.11, size:.072, tilt:.52, phase:2.1, leaves:true },
     { key:'indigo',   r:.79, speed: .075,size:.090, tilt:.46, phase:4.0 },
     // the only body allowed to behave differently: a real eccentric
     // path with the sun at one focus, not a circle
-    { key:'comet',    r:1.0, speed: .05, size:.060, tilt:.40, phase:1.2, ecc:.6 }
+    { key:'comet',    r:1.0, speed: .05, size:.060, tilt:.40, phase:1.2, ecc:.6, lit:0 }
   ];
 
   /* Debris carry two lives: a scattered inbound one and an orbital one.
@@ -199,6 +222,9 @@ export function createCosmos(canvas, { audioEl, getContext }) {
   let orbitT = 0, breathT = 0, swirl = 0;
   let noticeT = 0, noticeIdx = 0;
   let waves = [];          // the closing pulses
+  let beatIdx = 0, lastBeat = 0;
+  let queue = [];          // staggered sub-events, [{at, fn}]
+  let cinch = 0, inrush = 0;
   let toneIdx = 0;         // which of TONES we are waiting for
   let lastT = 0;           // to notice a seek and re-arm
   let level = 0;           // the track's live loudness, 0..1
@@ -267,6 +293,36 @@ export function createCosmos(canvas, { audioEl, getContext }) {
 
   const holding = (t) => HOLDS.some(([a, b]) => t >= a && t <= b);
 
+  function fireBeat(b, t) {
+    switch (b.act) {
+      case 'lit':
+        // n rocks notice themselves, one after the next
+        for (let k = 0; k < (b.n || 1); k++) {
+          queue.push({ at: t + k * (b.gap || .4), fn: () => {
+            const d = debris[(noticeIdx++) % debris.length];
+            if (d) d.noticed = 1;
+          }});
+        }
+        break;
+      case 'announce':
+        // one of each kind, in the order he names them
+        ['gasgiant', 'moon', 'comet'].forEach((key, k) => {
+          queue.push({ at: t + k * .62, fn: () => {
+            const body = BODIES.find((x) => x.key === key);
+            if (body) body.lit = 1;
+            if (k === 1) {
+              const d = debris[(noticeIdx++) % debris.length];
+              if (d) d.noticed = 1;
+            }
+          }});
+        });
+        break;
+      case 'cinch':  cinch = 1;  break;
+      case 'inrush': inrush = 1; break;
+      case 'rejoin': debris.forEach((d) => { d.push = 0; d.noticed = 0; }); break;
+    }
+  }
+
   function read(dt) {
     if (!analyser) {
       voice += (.4 - voice) * Math.min(1, dt * 2);
@@ -324,6 +380,23 @@ export function createCosmos(canvas, { audioEl, getContext }) {
     const idx = sceneAt(t);
     if (idx !== sceneIdx) { sceneIdx = idx; target = SCENES[idx]; }
 
+    /* beats, with the same seek handling as the tones: jumping back
+       re-arms the list, jumping forward skips what was passed rather
+       than firing all of it at once */
+    if (t < lastBeat - .3 || t > lastBeat + 1.5) {
+      beatIdx = 0; queue = [];
+      while (beatIdx < BEATS.length && BEATS[beatIdx].at <= t) beatIdx++;
+    } else {
+      while (beatIdx < BEATS.length && t >= BEATS[beatIdx].at) {
+        fireBeat(BEATS[beatIdx], t); beatIdx++;
+      }
+    }
+    lastBeat = t;
+    queue.sort((p, q) => p.at - q.at);
+    while (queue.length && t >= queue[0].at) queue.shift().fn();
+    cinch  = Math.max(0, cinch  - dt * .26);
+    inrush = Math.max(0, inrush - dt * .34);
+
     read(dt);
     ease(dt);
 
@@ -343,6 +416,10 @@ export function createCosmos(canvas, { audioEl, getContext }) {
       : .5 + .5 * Math.cos(Math.PI * ((cyc - .4) / .6));
     // the light follows the scene, and his breath when he is leading it
     const drive = look.breath > .5 ? (.35 + breath * .65) : .7;
+
+    /* what the beats are doing to the system this frame */
+    const spread = look.spread * (1 - cinch * .16);
+    const chaos  = Math.min(1, look.chaos + inrush * .38);
 
     const cx = W * .5;
     // optical centre, not geometric: the rail takes the bottom ~90px
@@ -450,7 +527,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
       c.lineWidth = 1;
       for (const b of BODIES) {
         if (b.ecc || b.leaves) continue;      // one is eccentric, one leaves
-        const rad = unit * .5 * b.r * look.spread;
+        const rad = unit * .5 * b.r * spread;
         c.beginPath();
         c.ellipse(cx, cy, rad, rad * b.tilt, 0, 0, Math.PI * 2);
         c.stroke();
@@ -507,7 +584,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         }
 
         const oa = orbitT * d.speed * 2 + d.phase;
-        const orad = unit * .5 * d.r * look.spread * (1 + d.push);
+        const orad = unit * .5 * d.r * spread * (1 + d.push);
         const ox = cx + Math.cos(oa) * orad;
         const oy = cy + Math.sin(oa) * orad * d.tilt;
 
@@ -523,7 +600,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
           sy += (cy + Math.sin(ang) * ring * .72 - sy) * look.crowd;
         }
 
-        const k = look.chaos;
+        const k = chaos;
         const x = sx * k + ox * (1 - k);
         const y = sy * k + oy * (1 - k);
 
@@ -551,7 +628,7 @@ export function createCosmos(canvas, { audioEl, getContext }) {
       for (const b of BODIES) {
         const leave = b.leaves ? look.depart : 0;
         const a = orbitT * b.speed * 2 + b.phase;
-        let rad = unit * .5 * b.r * look.spread * (.88 + look.orbit * .12);
+        let rad = unit * .5 * b.r * spread * (.88 + look.orbit * .12);
         if (b.ecc) {
           // the sun sits at one focus, so it genuinely swings in and out
           rad *= (1 - b.ecc * b.ecc) / (1 + b.ecc * Math.cos(a));
@@ -560,7 +637,19 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         const x = cx + Math.cos(a) * rad;
         const y = cy + Math.sin(a) * rad * b.tilt;
         const alpha = Math.min(1, look.orbit) * (1 - leave);
-        sprite(b.key, x, y, unit * b.size * (.72 + look.orbit * .28), alpha, 0);
+        if (b.lit > 0) b.lit = Math.max(0, b.lit - dt * .5);   // about 2s
+        sprite(b.key, x, y, unit * b.size * (.72 + look.orbit * .28) * (1 + b.lit * .12),
+               alpha, 0);
+        if (b.lit > .01) {
+          c.globalCompositeOperation = 'lighter';
+          const s2 = unit * b.size * 2.4;
+          const g2 = c.createRadialGradient(x, y, 0, x, y, s2);
+          g2.addColorStop(0, `rgba(233,214,168,${.26 * b.lit * alpha})`);
+          g2.addColorStop(1, 'rgba(0,0,0,0)');
+          c.fillStyle = g2;
+          c.beginPath(); c.arc(x, y, s2, 0, Math.PI * 2); c.fill();
+          c.globalCompositeOperation = 'source-over';
+        }
       }
     }
 
@@ -628,6 +717,8 @@ export function createCosmos(canvas, { audioEl, getContext }) {
         c.clearRect(0, 0, W, H);
         if (tc) tc.clearRect(0, 0, W, H);
         sceneIdx = -1; breathT = 0; waves = []; toneIdx = 0; lastT = 0;
+        beatIdx = 0; lastBeat = 0; queue = []; cinch = 0; inrush = 0;
+        BODIES.forEach((b) => b.lit = 0);
         target = SCENES[0];
         KEYS.forEach(k => look[k] = SCENES[0][k] || 0);
         seedDebris();

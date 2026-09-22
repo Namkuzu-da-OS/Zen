@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=40';
-import { createGarden } from './garden.js?v=40';
-import { createCosmos, SCENES } from './cosmos.js?v=40';
+import { Sound } from './audio.js?v=43';
+import { createGarden } from './garden.js?v=43';
+import { createCosmos, SCENES } from './cosmos.js?v=43';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -111,6 +111,49 @@ function syncSoundControl(on) {
     const lbl = inv.querySelector('.ui');
     if (lbl) lbl.textContent = on ? 'Listening' : 'Listen';
   }
+}
+
+/* Pressing Dusk should carry you into the scene, not leave you
+   looking at half of it. The browser's own `behavior: 'smooth'` is
+   quick and lands hard, so this eases it by hand over 1.8s — and
+   scroll-behavior has to be forced to auto for the duration, because
+   the stylesheet sets it to smooth globally and the two fight,
+   which is exactly what makes a scroll feel jerky.
+
+   Any real scroll input from the visitor abandons it immediately;
+   nothing here should wrestle a hand on a wheel. */
+function glideTo(el, ms = 1800) {
+  const target = Math.round(el.getBoundingClientRect().top + window.scrollY);
+  const from = window.scrollY;
+  const dist = target - from;
+  if (reduced || Math.abs(dist) < 4) { window.scrollTo(0, target); return; }
+
+  const root = document.documentElement;
+  const prev = root.style.scrollBehavior;
+  root.style.scrollBehavior = 'auto';
+
+  let cancelled = false;
+  const stop = () => { cancelled = true; };
+  addEventListener('wheel', stop, { passive: true, once: true });
+  addEventListener('touchstart', stop, { passive: true, once: true });
+  addEventListener('keydown', stop, { once: true });
+
+  const ease = (p) => (p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+  const t0 = performance.now();
+
+  const step = (now) => {
+    if (cancelled) { root.style.scrollBehavior = prev; return; }
+    const p = Math.min(1, (now - t0) / ms);
+    window.scrollTo(0, from + dist * ease(p));
+    if (p < 1) requestAnimationFrame(step);
+    else {
+      root.style.scrollBehavior = prev;
+      removeEventListener('wheel', stop);
+      removeEventListener('touchstart', stop);
+      removeEventListener('keydown', stop);
+    }
+  };
+  requestAnimationFrame(step);
 }
 
 /* ---------- 4. the sanctuary ---------- */
@@ -361,6 +404,7 @@ function wireNight(garden) {
   function enter() {
     if (api.active) return;
     api.active = true;
+    glideTo(stage);            // carry them into the scene first
     clearTimers();
     stage.classList.remove('is-leaving', 'is-hushing', 'is-veiling', 'is-arriving', 'is-night', 'is-locked');
     primeSky();

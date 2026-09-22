@@ -29,72 +29,121 @@ export const Sound = (() => {
     return ctx;
   }
 
-  /* --- noise, the raw material for water --- */
-  function noiseBuffer(seconds = 4) {
+  /* --- noise, the raw material for water ---
+     Brown noise is the sound of a large body of water: its energy
+     piles up at the bottom. A stream lives in the top half, so the
+     bright layers need white. */
+  function noiseBuffer(seconds = 4, colour = 'brown') {
     const n = Math.floor(ctx.sampleRate * seconds);
     const buf = ctx.createBuffer(2, n, ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const d = buf.getChannelData(ch);
-      // brown-ish noise: integrated white, gentler than white on the ear
-      let last = 0;
-      for (let i = 0; i < n; i++) {
-        const white = Math.random() * 2 - 1;
-        last = (last + 0.02 * white) / 1.02;
-        d[i] = last * 3.2;
+      if (colour === 'white') {
+        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+      } else {
+        let last = 0;
+        for (let i = 0; i < n; i++) {
+          const white = Math.random() * 2 - 1;
+          last = (last + 0.02 * white) / 1.02;
+          d[i] = last * 3.2;
+        }
       }
     }
     return buf;
   }
 
   /* --- a mountain stream ---
-     Three layers: the body of the water, the babble over stones,
-     and a slow wander in the filter so it never loops audibly. */
+     The first version read as surf, and the reason was the
+     modulation: two LFOs at 0.07 Hz and 0.031 Hz, so the filters
+     swelled over 14 and 32 second cycles. Slow swells against a
+     brown-noise bed is the definition of an ocean. A stream does the
+     opposite — it is bright, it flickers fast, and it is granular,
+     because the sound is thousands of separate collisions with stone.
+
+     So: the deep bed is pushed back to almost nothing, the bright
+     bands carry it, the modulation runs 20 to 50 times faster, and
+     discrete gurgles are scheduled on top. The gurgles are what
+     actually sell it; a filtered noise wash never will. */
   function buildStream() {
-    const buf = noiseBuffer(6);
+    const brown = noiseBuffer(6, 'brown');
+    const white = noiseBuffer(6, 'white');
     const out = ctx.createGain();
     out.gain.value = 1;
 
-    // body — low, continuous
-    const body = ctx.createBufferSource();
-    body.buffer = buf; body.loop = true;
-    const bodyFilter = ctx.createBiquadFilter();
-    bodyFilter.type = 'lowpass';
-    bodyFilter.frequency.value = 780;
-    bodyFilter.Q.value = 0.6;
-    const bodyGain = ctx.createGain();
-    bodyGain.gain.value = 0.55;
-    body.connect(bodyFilter).connect(bodyGain).connect(out);
+    const layer = (buf, rate, type, freq, q, gain) => {
+      const src = ctx.createBufferSource();
+      src.buffer = buf; src.loop = true; src.playbackRate.value = rate;
+      const f = ctx.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const g = ctx.createGain(); g.gain.value = gain;
+      src.connect(f).connect(g).connect(out);
+      src.start();
+      return { src, f, g };
+    };
 
-    // babble — brighter, narrower, where the water breaks
-    const babble = ctx.createBufferSource();
-    babble.buffer = buf; babble.loop = true;
-    babble.playbackRate.value = 1.31;      // decorrelate from the body
-    const babbleFilter = ctx.createBiquadFilter();
-    babbleFilter.type = 'bandpass';
-    babbleFilter.frequency.value = 2600;
-    babbleFilter.Q.value = 0.85;
-    const babbleGain = ctx.createGain();
-    babbleGain.gain.value = 0.3;
-    babble.connect(babbleFilter).connect(babbleGain).connect(out);
+    // the body of the water: present, but no longer the loudest thing
+    const body   = layer(brown, 1.00, 'lowpass',  520,  0.7, 0.18);
+    // the babble over stones — this is the stream
+    const babble = layer(white, 1.00, 'bandpass', 1500, 0.9, 0.30);
+    // and the fine spray at the top
+    const spray  = layer(white, 1.27, 'bandpass', 4600, 0.7, 0.13);
 
-    // the wander — two slow LFOs, deliberately not in phase
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.07;
-    const lfoAmt = ctx.createGain();
-    lfoAmt.gain.value = 420;
-    lfo.connect(lfoAmt).connect(babbleFilter.frequency);
-    lfo.start();
+    // fast, shallow movement. Water flickers; it does not swell.
+    const wobble = (target, hz, depth) => {
+      const lfo = ctx.createOscillator();
+      lfo.type = 'triangle';
+      lfo.frequency.value = hz;
+      const amt = ctx.createGain();
+      amt.gain.value = depth;
+      lfo.connect(amt).connect(target);
+      lfo.start();
+      return lfo;
+    };
+    const l1 = wobble(babble.f.frequency, 1.7,  520);
+    const l2 = wobble(spray.f.frequency,  2.9,  900);
+    const l3 = wobble(babble.g.gain,      0.8,  0.05);
 
-    const lfo2 = ctx.createOscillator();
-    lfo2.frequency.value = 0.031;
-    const lfo2Amt = ctx.createGain();
-    lfo2Amt.gain.value = 190;
-    lfo2.connect(lfo2Amt).connect(bodyFilter.frequency);
-    lfo2.start();
+    /* The gurgles: short resonant blips, a few every second at random
+       intervals and pitches. This is the granularity that separates
+       running water from a noise wash. */
+    let scheduled = ctx.currentTime;
+    function fillGurgles() {
+      if (!wanted) { scheduled = ctx.currentTime; return; }
+      const horizon = ctx.currentTime + 1.2;
+      while (scheduled < horizon) {
+        scheduled += 0.06 + Math.random() * 0.22;
+        const t = scheduled;
+        const hi = Math.random() < 0.3;
 
-    body.start();
-    babble.start();
-    return { out, nodes: [body, babble, lfo, lfo2] };
+        const src = ctx.createBufferSource();
+        src.buffer = white;
+        src.loop = false;
+        // start somewhere random in the buffer for a fresh grain
+        const off = Math.random() * 5;
+
+        const f = ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        const base = hi ? 2200 + Math.random() * 2600 : 700 + Math.random() * 1100;
+        f.frequency.setValueAtTime(base, t);
+        // a blip of water rises slightly in pitch as the bubble collapses
+        f.frequency.linearRampToValueAtTime(base * (1.1 + Math.random() * 0.5), t + 0.07);
+        f.Q.value = 6 + Math.random() * 10;
+
+        const g = ctx.createGain();
+        const peak = (hi ? 0.05 : 0.09) * (0.5 + Math.random() * 0.8);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(peak, t + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05 + Math.random() * 0.08);
+
+        src.connect(f).connect(g).connect(out);
+        src.start(t, off, 0.2);
+        src.stop(t + 0.22);
+      }
+    }
+    fillGurgles();
+    const gurgleTimer = setInterval(fillGurgles, 700);
+
+    return { out, nodes: [body.src, babble.src, spray.src, l1, l2, l3], gurgleTimer };
   }
 
   function fade(param, to, seconds) {

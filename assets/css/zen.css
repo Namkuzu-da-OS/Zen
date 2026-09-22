@@ -839,18 +839,29 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .night-tide.is-live { opacity: 1; }
 
-/* Left third, clear of the sun and the inner orbits. These used to
-   sit dead centre, on top of the bodies. */
+/* Centred above the scene. They began dead centre, on top of the
+   bodies; moving them to the left third fixed the collision but read
+   as an afterthought pinned to the edge. Above the system is where a
+   title belongs, and the orbits never reach that high — the outermost
+   body's vertical extent tops out around 27% of the height. */
 .night-cue {
-  left: var(--gutter); top: 27%; right: auto; bottom: auto;
-  transform: none;
-  margin: 0; width: max-content; max-width: 46vw;
-  text-align: left; pointer-events: none;
+  left: 50%; top: 15%; right: auto; bottom: auto;
+  transform: translateX(-50%);
+  margin: 0; width: max-content; max-width: min(86vw, 38rem);
+  text-align: center; pointer-events: none;
   font-family: var(--display); font-weight: 300;
   font-size: clamp(1.3rem, 3.6vw, 2.3rem);
-  letter-spacing: .32em; text-transform: uppercase;
-  color: rgba(227, 205, 155, .34);
-  text-shadow: 0 2px 26px rgba(3, 5, 10, .9);
+  /* the indent matters once this is centred: tracking adds space
+     after the last letter and shifts the block visibly right */
+  letter-spacing: .32em; text-indent: .32em; text-transform: uppercase;
+  /* These were at 34% alpha, which is unreadable over a nebula —
+     quiet is not the same as faint. Full-strength ink with a tight
+     shadow for edge definition and a wide one for separation from
+     whatever is behind it. */
+  color: rgba(235, 217, 175, .92);
+  text-shadow: 0 1px 2px rgba(3, 5, 10, .95),
+               0 2px 14px rgba(3, 5, 10, .9),
+               0 0 34px rgba(3, 5, 10, .75);
   opacity: 0;
   transition: opacity 3s var(--ease);
 }
@@ -1124,7 +1135,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   /* a deliberate portrait crop: the luminous nebula edge stays in
      frame with deep negative space around it, not a flat star patch */
   .night-plate { background-position: var(--scene-pos-narrow, var(--scene-pos, 42% 32%)); }
-  .night-cue { top: 31%; left: var(--edge); }
+  .night-cue { top: 14%; }
 
   .playing {
     left: var(--gutter); right: var(--gutter); bottom: clamp(10rem, 18vh, 11.5rem);
