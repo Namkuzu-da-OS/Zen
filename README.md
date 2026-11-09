@@ -117,3 +117,26 @@ the offset that needs an ear.
   observer would otherwise render the whole page blank.
 - All controls are real `<button>`s with text labels and `aria-pressed`.
 - Escape closes the menu and the timer.
+- The volume slider is a real `<input type="range">` labelled "Volume"; it is
+  hidden from screen readers and the tab order until sound is on.
+
+---
+
+## Sound levels
+
+| Sound | Where it is set | Default |
+|---|---|---|
+| Stream (Listen) | `audio.js` `vol` × scene `base` | slider at 35% |
+| Kill the Noise voice | `zen.js` `wanted` + `.voice input` in `index.html` | 0.6 |
+| Sit bell | `audio.js` `bell()` bus 0.22, strike 0.32 | — |
+
+The stream slider scales every scene level (the stream coming forward at
+the question, ducking at night), so a visitor's choice holds all the way
+through. It is saved in `localStorage` as `zen-volume`; clear it to hear
+the default again.
+
+## Changelog
+
+- **2026-11-09**: the stream starts quieter (35%, was 50%) and gets a
+  volume slider beside Listen; Kill the Noise starts at 0.6 (was 0.9);
+  the Sit bell is about 4 dB softer.

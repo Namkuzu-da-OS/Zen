@@ -141,6 +141,7 @@ screen; the reading acts are as tall as their copy.
 | `.plate` | parable | The monk. Left edge of the act on desktop, banner on a phone; a mask dissolves its fog into the paper. |
 | `.halo` | threshold | Three faint rings. Above the title on a phone; over the sun on desktop. |
 | `.invitation` | threshold | The single call. Becomes an animated level meter when sound is on. |
+| `.volume` | threshold | Hairline gold slider that fades in beside the invitation only once sound is on (so the screen still has one call). Scales every stream level; remembered per browser. |
 | `.gloss` | parable, awakening | Seal + term + italic meaning. `.dark` variant for dark acts. |
 | `.enso` | transition | Generated brush path, not a CSS circle. Ivory on a phone; ink on the sky on desktop, with the peak breaking the ring. See §7. |
 | `.rail` | sanctuary | Overlaid in the shade at the foot of the garden. Sit is `.primary` (a ring) in the middle; Sound, Dawn, Rake, Fullscreen are quieter. Every target is ≥ 56×60. Pressed state: gold + a dot under the label. |
