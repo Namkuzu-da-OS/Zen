@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&display=swap">
-<link rel="stylesheet" href="assets/css/zen.css?v=51">
+<link rel="stylesheet" href="assets/css/zen.css?v=52">
 
 <!-- Without JS nothing would ever get .is-in and the page would render
      blank. The story is the point; it must survive no scripting. -->
@@ -73,13 +73,19 @@
 
     <p class="hero-creed reveal d2">A story. A question. A practice.<br>A quieter you.</p>
 
-    <button class="invitation reveal d3" type="button" aria-pressed="false">
-      <span class="orb">
-        <svg class="glyph" viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0l12 7-12 7z"/></svg>
-        <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      </span>
-      <span class="ui">Listen</span>
-    </button>
+    <div class="listen-row reveal d3">
+      <button class="invitation" type="button" aria-pressed="false">
+        <span class="orb">
+          <svg class="glyph" viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0l12 7-12 7z"/></svg>
+          <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        </span>
+        <span class="ui">Listen</span>
+      </button>
+      <label class="volume" aria-hidden="true">
+        <span class="vol-icon" aria-hidden="true"><svg viewBox="0 0 16 14"><path d="M1 5h3l4-3.5v11L4 9H1z"/><path class="wave" d="M11 4.2a4 4 0 0 1 0 5.6M13.2 2a7 7 0 0 1 0 10"/></svg></span>
+        <input type="range" min="0" max="100" step="1" value="50" aria-label="Volume" tabindex="-1">
+      </label>
+    </div>
   </div>
 
   <p class="act-mark ui"><span class="n">01</span><span class="t">The Threshold</span></p>
@@ -309,6 +315,6 @@
     and &ldquo;Shallow small river with stony riverbed&rdquo; by stephan (public domain)</p>
 </footer>
 
-<script type="module" src="assets/js/zen.js?v=51"></script>
+<script type="module" src="assets/js/zen.js?v=52"></script>
 </body>
 </html>

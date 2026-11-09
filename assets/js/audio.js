@@ -16,6 +16,19 @@ export const Sound = (() => {
 
   const LEVEL = 0.5;
 
+  /* Two numbers make the loudness. `base` is what the scene asks for
+     (the stream coming forward at the question, ducking under the
+     voice at night). `vol` is the visitor's own slider, and it scales
+     every scene level, so their choice holds all the way through.
+     It starts at half: the old full level was a little loud. */
+  let base = LEVEL;
+  let vol = 0.5;
+  try {
+    const saved = parseFloat(localStorage.getItem('zen-volume'));
+    if (saved >= 0 && saved <= 1) vol = saved;
+  } catch { /* storage blocked; the default stands */ }
+  const target = () => base * vol;
+
   /* --- the context can only be born from a gesture --- */
   function wake() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return ctx; }
@@ -228,7 +241,7 @@ export const Sound = (() => {
     if (!wake()) return false;
     wanted = true;
 
-    if (stream) { fade(master.gain, LEVEL, 3.2); return true; }
+    if (stream) { fade(master.gain, target(), 3.2); return true; }
 
     /* The recording is the real thing and the synth is the safety net.
        The fade-in is 3.2s, so a short decode is invisible. */
@@ -237,13 +250,13 @@ export const Sound = (() => {
         if (!wanted || stream) return;
         stream = playSample(buf);
         stream.out.connect(master);
-        fade(master.gain, LEVEL, 3.2);
+        fade(master.gain, target(), 3.2);
       })
       .catch(() => {
         if (!wanted || stream) return;
         stream = buildSynthStream();
         stream.out.connect(master);
-        fade(master.gain, LEVEL, 3.2);
+        fade(master.gain, target(), 3.2);
       });
     return true;
   }
@@ -261,8 +274,17 @@ export const Sound = (() => {
   function isOn() { return wanted; }
 
   function level(v) {
+    base = v;
     if (!ctx || !master) return;
-    fade(master.gain, wanted ? v : 0, 0.4);
+    fade(master.gain, wanted ? target() : 0, 0.4);
+  }
+
+  function volume(v) {
+    if (v === undefined) return vol;
+    vol = Math.min(1, Math.max(0, v));
+    try { localStorage.setItem('zen-volume', String(vol)); } catch { /* fine */ }
+    if (ctx && master && wanted) fade(master.gain, target(), 0.15);
+    return vol;
   }
 
   /* --- a temple bell ---
@@ -367,6 +389,6 @@ export const Sound = (() => {
     osc.stop(t + 0.3);
   }
 
-  return { enable, disable, toggle, isOn, level, bell, rake, stone, wake,
+  return { enable, disable, toggle, isOn, level, volume, bell, rake, stone, wake,
            get ready() { return ready; } };
 })();

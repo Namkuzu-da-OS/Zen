@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=51';
-import { createGarden } from './garden.js?v=51';
-import { createCosmos, SCENES } from './cosmos.js?v=51';
+import { Sound } from './audio.js?v=52';
+import { createGarden } from './garden.js?v=52';
+import { createCosmos, SCENES } from './cosmos.js?v=52';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -99,11 +99,29 @@ function wireInvitation() {
     const lbl = btn.querySelector('.ui');
     if (lbl) lbl.textContent = on ? 'Listening' : 'Listen';
   });
+
+  // the volume slider sits beside the invitation once it is playing
+  const range = $('.volume input');
+  if (range) {
+    const paint = () => range.style.setProperty('--fill', range.value + '%');
+    range.value = String(Math.round(Sound.volume() * 100));
+    paint();
+    range.addEventListener('input', () => {
+      Sound.volume(range.value / 100);
+      paint();
+    });
+  }
 }
 
 function syncSoundControl(on) {
   const c = $('[data-control="sound"]');
   if (c) c.setAttribute('aria-pressed', String(on));
+  const vol = $('.volume');
+  if (vol) {
+    vol.classList.toggle('is-on', on);
+    vol.setAttribute('aria-hidden', String(!on));
+    vol.querySelector('input')?.setAttribute('tabindex', on ? '0' : '-1');
+  }
   const inv = $('.invitation');
   if (inv) {
     inv.classList.toggle('is-playing', on);
