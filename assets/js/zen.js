@@ -4,9 +4,9 @@
    The interface should never be the thing you notice.
    ============================================================= */
 
-import { Sound } from './audio.js?v=52';
-import { createGarden } from './garden.js?v=52';
-import { createCosmos, SCENES } from './cosmos.js?v=52';
+import { Sound } from './audio.js?v=53';
+import { createGarden } from './garden.js?v=53';
+import { createCosmos, SCENES } from './cosmos.js?v=53';
 
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -300,7 +300,7 @@ function wireNight(garden) {
     at: s.at, name: s.name, cue: CUES[s.name] || null
   }));
 
-  let wanted = 0.9;                      // the visitor's chosen voice level
+  let wanted = 0.6;                      // the visitor's chosen voice level (was 0.9: too loud)
   let fadeRaf = 0;
   let ambienceWasOn = false;
   let skyPrimed = false;

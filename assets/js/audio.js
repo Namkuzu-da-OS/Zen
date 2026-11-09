@@ -20,9 +20,9 @@ export const Sound = (() => {
      (the stream coming forward at the question, ducking under the
      voice at night). `vol` is the visitor's own slider, and it scales
      every scene level, so their choice holds all the way through.
-     It starts at half: the old full level was a little loud. */
+     It starts at about a third: the old full level was a little loud. */
   let base = LEVEL;
-  let vol = 0.5;
+  let vol = 0.35;
   try {
     const saved = parseFloat(localStorage.getItem('zen-volume'));
     if (saved >= 0 && saved <= 1) vol = saved;

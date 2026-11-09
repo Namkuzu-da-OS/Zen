@@ -391,7 +391,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   -webkit-appearance: none; appearance: none;
   width: clamp(110px, 12vw, 150px); height: 22px; margin: 0;
   background: transparent; cursor: pointer;
-  --fill: 50%;
+  --fill: 35%;
 }
 .volume input::-webkit-slider-runnable-track {
   height: 1px;
