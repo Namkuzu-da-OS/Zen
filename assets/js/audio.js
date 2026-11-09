@@ -313,7 +313,7 @@ export const Sound = (() => {
     ];
 
     const bus = ctx.createGain();
-    bus.gain.value = 0.34 * strength;
+    bus.gain.value = 0.22 * strength;   // was 0.34: a little loud on Sit
     bus.connect(ctx.destination);
 
     partials.forEach(([ratio, amp, decay]) => {
@@ -347,7 +347,7 @@ export const Sound = (() => {
     hitFilter.frequency.value = 2000;
     hitFilter.Q.value = 1.2;
     const hitGain = ctx.createGain();
-    hitGain.gain.setValueAtTime(0.5 * strength, t);
+    hitGain.gain.setValueAtTime(0.32 * strength, t);
     hitGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     hit.connect(hitFilter).connect(hitGain).connect(ctx.destination);
     hit.start(t);
